@@ -10,8 +10,11 @@ DB_PATH = Path(__file__).resolve().parent.parent / "data" / "scansaver.db"
 
 def _conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fresh = not DB_PATH.exists()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    if fresh:
+        init_db()
     return conn
 
 
