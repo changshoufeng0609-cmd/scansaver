@@ -28,9 +28,36 @@ def _headers():
     return {"xi-api-key": key}
 
 
+_SCHEMA_ANNOTATIONS = ("description", "dynamic_variable", "is_system_provided",
+                       "constant_value", "is_omitted")
+
+
+def _ensure_descriptions(node: dict) -> None:
+    """The tools API rejects any schema node lacking one of description /
+    dynamic_variable / is_system_provided / constant_value / is_omitted.
+    Config schemas shouldn't have to care, so default missing ones here."""
+    for key, prop in (node.get("properties") or {}).items():
+        if isinstance(prop, dict):
+            if not any(k in prop for k in _SCHEMA_ANNOTATIONS):
+                prop["description"] = f"The {key.replace('_', ' ')}."
+            _ensure_descriptions(prop)
+    items = node.get("items")
+    if isinstance(items, dict):
+        if not any(k in items for k in _SCHEMA_ANNOTATIONS):
+            items["description"] = "One entry."
+        _ensure_descriptions(items)
+
+
 def webhook_tool(name: str, description: str, url: str, properties: dict,
                  required: list[str]) -> dict:
     """Webhook tool_config, per /docs/api-reference/tools/create."""
+    body_schema = {
+        "type": "object",
+        "description": description,
+        "properties": properties,
+        "required": required,
+    }
+    _ensure_descriptions(body_schema)
     return {
         "type": "webhook",
         "name": name,
@@ -38,11 +65,7 @@ def webhook_tool(name: str, description: str, url: str, properties: dict,
         "api_schema": {
             "url": url,
             "method": "POST",
-            "request_body_schema": {
-                "type": "object",
-                "properties": properties,
-                "required": required,
-            },
+            "request_body_schema": body_schema,
         },
     }
 

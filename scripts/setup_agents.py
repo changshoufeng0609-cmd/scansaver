@@ -12,6 +12,7 @@ variables.
 """
 import json
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -47,7 +48,7 @@ def render(template_path: Path, replacements: dict) -> str:
     text = template_path.read_text(encoding="utf-8")
     for key, value in replacements.items():
         text = text.replace(f"<<{key}>>", value)
-    leftovers = [line for line in text.splitlines() if "<<" in line]
+    leftovers = re.findall(r"<<[A-Z0-9_]+>>", text)
     if leftovers:
         raise ValueError(f"Unfilled placeholders in {template_path.name}: {leftovers}")
     return text
