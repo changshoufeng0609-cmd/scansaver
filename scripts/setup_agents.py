@@ -36,11 +36,11 @@ DEFAULT_LLM = os.environ.get("ELEVENLABS_LLM", "claude-sonnet-4-5")
 # Premade ElevenLabs voices — swap freely; ids are checked against the
 # workspace's voice list at setup time and fall back to default if missing.
 VOICES = {
-    "estimator": "21m00Tcm4TlvDq8ikWAM",   # Rachel
-    "caller": "pNInz6obpgDQGcFmaJgB",      # Adam
-    "stonewaller": "MF3mGyEYCl7XYWbV9V6O", # Elli
-    "lowballer": "TxGEqnHWrfWFTfGW9XjX",   # Josh
-    "upseller": "EXAVITQu4vr4xnSDxMaL",    # Sarah/Bella
+    "estimator": "hpp4J3VqNfWAUOO0d1Us",   # Bella — professional, warm
+    "caller": "pNInz6obpgDQGcFmaJgB",      # Adam — firm negotiator
+    "stonewaller": "XrExE9yKIg1WjnnlVkGX", # Matilda — by-the-book front desk
+    "lowballer": "TX3LPaxmHKxFdv7VOQHJ",   # Liam — fast-talking salesy
+    "upseller": "EXAVITQu4vr4xnSDxMaL",    # Sarah — confident Sloane
 }
 
 

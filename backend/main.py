@@ -225,14 +225,24 @@ async def post_call_webhook(request: Request):
         dest.write_bytes(base64.b64decode(data.get("full_audio", "")))
         return {"ok": True, "note": "audio stored"}
 
+    if body.get("type") == "call_initiation_failure":
+        reason = data.get("failure_reason") or "unknown"
+        db.upsert_call(conversation_id=cid, status=f"failed: {reason}",
+                       raw_webhook=body)
+        return {"ok": True, "note": "failure recorded"}
+
     dyn = (data.get("conversation_initiation_client_data") or {}).get(
         "dynamic_variables", {})
+    status = data.get("status")
+    secs = (data.get("metadata") or {}).get("call_duration_secs")
+    if status and secs:
+        status = f"{status} ({secs}s)"
     db.upsert_call(
         conversation_id=cid,
         spec_id=dyn.get("spec_id"),
         facility_name=dyn.get("facility_name"),
         negotiation_mode=(dyn.get("negotiation_mode") == "yes"),
-        status=data.get("status"),
+        status=status,
         transcript=data.get("transcript"),
         raw_webhook=body,
     )
@@ -244,8 +254,11 @@ async def post_call_webhook(request: Request):
 @app.get("/api/quotes")
 def api_quotes(spec_id: str | None = None):
     sid = _resolve_spec_id(spec_id)
+    config = load_config()
+    spec_row = db.get_spec(sid)
     return {
         "spec_id": sid,
+        "benchmark": get_benchmark(spec_row["spec"], config) if spec_row else None,
         "quotes": db.list_quotes(sid),
         "outcomes": db.list_outcomes(sid),
         "calls": [

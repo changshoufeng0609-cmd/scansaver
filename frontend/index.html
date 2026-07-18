@@ -133,7 +133,9 @@
         <button id="call-btn">Call</button>
         <span id="call-status" class="mono" style="font-size:13px"></span>
       </div>
+      <div id="calls-list" class="mono" style="font-size:12.5px;margin-top:10px;color:var(--muted)"></div>
     </div>
+    <div id="benchmark-band" class="mono" style="font-size:13px;color:var(--muted);margin:0 0 10px"></div>
     <div class="row" id="quotes"></div>
     <div class="card" style="margin-top:16px">
       <strong>Other structured outcomes</strong>
@@ -248,7 +250,7 @@ function stamp(flag) {
   return `<span class="stamp${cls}" title="${flag.explanation || ""}">⚑ ${flag.label}</span>`;
 }
 
-function renderQuotes(quotes) {
+function renderQuotes(quotes, benchmark) {
   const byFac = {};
   quotes.forEach(q => (byFac[q.facility_name] ||= []).push(q));
   const cards = Object.entries(byFac).map(([fac, qs]) => {
@@ -260,6 +262,12 @@ function renderQuotes(quotes) {
       `<span class="dots"></span><span>${fmt(li.amount)}</span></li>`).join("");
     const flags = (q.red_flags || []).map(stamp).join("") ||
       `<span class="stamp ok">no red flags</span>`;
+    let vsMedian = "";
+    if (benchmark && benchmark.cash_median && q.total) {
+      const pct = Math.round(100 * (q.total - benchmark.cash_median) / benchmark.cash_median);
+      vsMedian = `<div class="hint" style="margin:4px 0 0">
+        ${pct >= 0 ? "+" : ""}${pct}% vs market median ${fmt(benchmark.cash_median)}</div>`;
+    }
     return `<div class="card quote-card">
       <div class="facility">${fac}</div>
       ${moved ? `<div class="moved">▾ price moved during call
@@ -267,12 +275,29 @@ function renderQuotes(quotes) {
       <ul class="ledger">${items}</ul>
       <div class="total"><span>${q.itemized ? "itemized total" : "stated total (not itemized)"}</span>
         <span>${fmt(q.total)}</span></div>
+      ${vsMedian}
       <div>${flags}</div>
       ${q.notes ? `<p class="hint" style="margin:10px 0 0">${q.notes}</p>` : ""}
     </div>`;
   });
   $("quotes").innerHTML = cards.join("") ||
     `<div class="empty">no quotes logged yet</div>`;
+}
+
+function renderBenchmark(b) {
+  $("benchmark-band").textContent = b && b.cash_median
+    ? `market benchmark (${b.label || ""}): low ${fmt(b.cash_low)} · median ${fmt(b.cash_median)} · high ${fmt(b.cash_high)} · Medicare floor ${fmt(b.medicare_floor)}`
+    : "";
+}
+
+function renderCalls(calls) {
+  $("calls-list").innerHTML = (calls || []).map(c => {
+    const s = c.status || "…";
+    const color = s.startsWith("failed") ? "var(--flag)"
+      : s.startsWith("done") ? "var(--accent)" : "var(--warn)";
+    return `<div>☎ ${c.facility_name || "?"} — <span style="color:${color}">${s}</span>` +
+      `${c.negotiation_mode ? " · negotiation" : ""}</div>`;
+  }).join("");
 }
 
 function renderOutcomes(outcomes) {
@@ -287,8 +312,10 @@ function renderOutcomes(outcomes) {
 async function poll() {
   try {
     const data = await (await fetch("/api/quotes")).json();
-    renderQuotes(data.quotes);
+    renderBenchmark(data.benchmark);
+    renderQuotes(data.quotes, data.benchmark);
     renderOutcomes(data.outcomes);
+    renderCalls(data.calls);
     window._calls = data.calls || [];
   } catch (e) { /* no confirmed spec yet — fine */ }
 }
@@ -301,7 +328,8 @@ $("report-btn").onclick = async () => {
   const rows = r.ranked.map((q, i) =>
     `<li><strong>#${i + 1} ${q.facility_name}</strong> —
      <span class="mono">${fmt(q.effective_total)}</span> effective
-     ${q.price_moved ? '<span class="moved">· price moved</span>' : ""}
+     ${q.price_moved ? `<span class="moved">· price moved${
+       q.saved ? ` — saved ${fmt(q.saved)} (${q.saved_pct}%)` : ""}</span>` : ""}
      ${(q.red_flags || []).map(stamp).join("")}
      ${q.effective_note ? `<div class="hint">${q.effective_note}</div>` : ""}</li>`
   ).join("");

@@ -36,6 +36,10 @@ def _latest_quote_per_facility(quotes: list[dict]) -> list[dict]:
             {"total": q["total"], "created_at": q["created_at"]} for q in qs
         ]
         current["price_moved"] = len({q["total"] for q in qs}) > 1
+        if current["price_moved"] and qs[0]["total"]:
+            saved = qs[0]["total"] - current["total"]
+            current["saved"] = saved
+            current["saved_pct"] = round(100 * saved / qs[0]["total"])
         out.append(current)
     return out
 
