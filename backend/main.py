@@ -74,6 +74,17 @@ async def create_spec(request: Request):
     return {"spec_id": spec_id}
 
 
+@app.put("/api/specs/{spec_id}")
+async def update_spec(spec_id: str, request: Request):
+    """Persist UI edits to an existing spec (the confirm flow sends the
+    textarea's JSON here first so edits actually stick)."""
+    body = await request.json()
+    if not db.get_spec(spec_id):
+        raise HTTPException(404, "spec not found")
+    db.update_spec(spec_id, body["spec"])
+    return {"ok": True}
+
+
 @app.post("/api/specs/{spec_id}/confirm")
 def confirm_spec(spec_id: str):
     db.confirm_spec(spec_id)

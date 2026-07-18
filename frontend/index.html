@@ -218,6 +218,10 @@ $("confirm-btn").onclick = async () => {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({spec})})).json();
     specId = res.spec_id;
+  } else {
+    await fetch(`/api/specs/${specId}`, {method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({spec})});
   }
   await fetch(`/api/specs/${specId}/confirm`, {method: "POST"});
   $("spec-status").textContent = `spec ${specId} · confirmed ✓`;

@@ -77,6 +77,12 @@ def create_spec(spec: dict, vertical: str, confirmed: bool = False) -> str:
     return spec_id
 
 
+def update_spec(spec_id: str, spec: dict):
+    with _conn() as c:
+        c.execute("UPDATE specs SET spec_json=? WHERE id=?",
+                  (json.dumps(spec), spec_id))
+
+
 def confirm_spec(spec_id: str):
     with _conn() as c:
         c.execute("UPDATE specs SET confirmed=1 WHERE id=?", (spec_id,))

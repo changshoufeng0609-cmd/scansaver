@@ -18,17 +18,23 @@ def load_config() -> dict:
 
 
 def resolve_cpt(spec: dict, config: dict) -> str | None:
-    """Best-effort CPT lookup from cpt_map keys like 'MRI|ankle|without'."""
+    """Best-effort CPT lookup from cpt_map keys like 'MRI|ankle|without'.
+    Falls back to a scan+part match with any third component when the spec's
+    value (e.g. contrast 'unknown') has no exact entry — an approximate
+    benchmark beats none, and the benchmark label still states its variant."""
     if spec.get("cpt_code"):
         return spec["cpt_code"]
     scan = (spec.get("scan_type") or "").strip()
     part = (spec.get("body_part") or "").lower()
     contrast = spec.get("contrast") or "without"
+    fallback = None
     for key, entry in config.get("cpt_map", {}).items():
         k_scan, k_part, k_contrast = key.split("|")
-        if k_scan == scan and k_part in part and k_contrast == contrast:
-            return entry["cpt"]
-    return None
+        if k_scan == scan and k_part in part:
+            if k_contrast == contrast:
+                return entry["cpt"]
+            fallback = fallback or entry["cpt"]
+    return fallback
 
 
 def get_benchmark(spec: dict, config: dict) -> dict | None:
