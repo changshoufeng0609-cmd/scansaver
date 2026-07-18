@@ -1,0 +1,74 @@
+{
+  "vertical": "moving",
+  "display_name": "Local & intrastate moving",
+  "currency": "USD",
+  "_design_note": "Stub config proving the config-not-code requirement: pointing VERTICAL_CONFIG at this file retargets the whole system from imaging centers to movers with zero code changes. Flesh out before actually using.",
+
+  "job_spec_schema": {
+    "type": "object",
+    "required": ["origin_zip", "destination_zip", "home_size", "move_date"],
+    "properties": {
+      "origin_zip": { "type": "string" },
+      "destination_zip": { "type": "string" },
+      "distance_miles": { "type": "number" },
+      "home_size": { "type": "string", "enum": ["studio", "1br", "2br", "3br", "4br_plus"] },
+      "large_items": { "type": "array", "items": { "type": "string" } },
+      "stairs_origin": { "type": "string", "enum": ["none", "one_flight", "two_plus", "elevator"] },
+      "stairs_destination": { "type": "string", "enum": ["none", "one_flight", "two_plus", "elevator"] },
+      "long_carry": { "type": "boolean" },
+      "packing_service": { "type": "string", "enum": ["none", "partial", "full"] },
+      "move_date": { "type": "string" },
+      "notes": { "type": "string" }
+    }
+  },
+
+  "intake_questions": [
+    { "id": "route", "ask": "What ZIP codes are you moving from and to?", "maps_to": "origin_zip" },
+    { "id": "size", "ask": "How big is the place — studio, one bedroom, two?", "maps_to": "home_size" },
+    { "id": "large", "ask": "Any large or unusual items — piano, safe, treadmill?", "maps_to": "large_items", "unknown_ok": true },
+    { "id": "stairs", "ask": "Stairs or elevator on either end?", "maps_to": "stairs_origin" },
+    { "id": "date", "ask": "What's your target move date?", "maps_to": "move_date" }
+  ],
+
+  "cpt_map": {},
+
+  "benchmarks": {
+    "_warning": "EXAMPLE VALUES — replace with FMCSA / moveBuddha data for your route.",
+    "by_cpt": {
+      "2br_45mi": { "label": "2BR, ~45 miles, standard service", "medicare_floor": 0, "cash_low": 1158, "cash_median": 2400, "cash_high": 6506 }
+    }
+  },
+
+  "quote_line_items": [
+    { "id": "hourly_labor", "label": "Hourly labor (crew x hours)" },
+    { "id": "truck_fee", "label": "Truck / travel fee" },
+    { "id": "stairs_fee", "label": "Stairs fee" },
+    { "id": "long_carry_fee", "label": "Long carry fee" },
+    { "id": "materials", "label": "Packing materials" },
+    { "id": "other", "label": "Other" }
+  ],
+
+  "red_flags": [
+    { "id": "refused_to_quote", "type": "outcome", "severity": "high", "label": "Refused to give any price", "explanation": "No sight-unseen ballpark at all is a stalling pattern." },
+    { "id": "below_market", "type": "price", "severity": "high", "rule": { "metric": "total", "op": "lt", "factor": 0.7, "of": "cash_low" }, "label": "30%+ below market low", "explanation": "Lowball-then-upcharge is a business model, not an accident (FMCSA)." },
+    { "id": "no_itemization", "type": "structure", "severity": "medium", "label": "Would not itemize", "explanation": "Un-itemized quotes hide stairs, long-carry, and fuel fees until moving day." }
+  ],
+
+  "negotiation_levers": [
+    { "id": "competing_quote", "requires_best_quote": true, "line": "I have a binding quote from another mover for the same job. Can you beat it?" },
+    { "id": "all_in_guarantee", "requires_best_quote": false, "line": "Can you send a written not-to-exceed estimate including stairs and travel fees?" }
+  ],
+
+  "honesty_rules": [
+    "If asked whether you are an AI, answer truthfully in one short sentence, then return to the task.",
+    "Never invent inventory, rooms, or competing bids. Only cite quotes actually collected."
+  ],
+
+  "call_outcomes": ["itemized_quote", "callback_commitment", "documented_decline"],
+
+  "counterparty_market": [
+    { "agent_key": "stonewaller", "facility_name": "Ridgeline Movers" },
+    { "agent_key": "lowballer", "facility_name": "Budget Bros Moving" },
+    { "agent_key": "upseller", "facility_name": "WhiteGlove Van Lines" }
+  ]
+}

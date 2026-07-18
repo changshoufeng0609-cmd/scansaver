@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ScanSaver — never overpay for a scan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F1F4F3; --surface:#FFFFFF; --ink:#16262B; --muted:#5C6E6B;
+    --accent:#0E6E62; --flag:#B3382F; --warn:#A16B00; --line:#D8E0DE;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 "Archivo",system-ui,sans-serif;}
+  .mono{font-family:"IBM Plex Mono",monospace}
+  header{display:flex;justify-content:space-between;align-items:baseline;
+    padding:20px 28px;border-bottom:1.5px solid var(--ink)}
+  .wordmark{font-weight:800;font-size:22px;letter-spacing:-.02em}
+  .wordmark span{color:var(--accent)}
+  #vertical-pill{font-size:12px;color:var(--muted)}
+  main{max-width:980px;margin:0 auto;padding:8px 24px 80px}
+  section{margin-top:44px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;
+    letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+  h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:4px 0 6px}
+  .hint{color:var(--muted);font-size:14px;max-width:640px;margin:0 0 16px}
+  .card{background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:18px 20px}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .row>.card{flex:1 1 300px}
+  button{font:inherit;font-weight:700;border:1.5px solid var(--ink);
+    background:var(--ink);color:#fff;border-radius:8px;padding:9px 16px;
+    cursor:pointer}
+  button.secondary{background:transparent;color:var(--ink)}
+  button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  textarea{width:100%;min-height:180px;font-family:"IBM Plex Mono",monospace;
+    font-size:13px;border:1px solid var(--line);border-radius:8px;padding:12px;
+    background:#FBFDFC}
+  /* signature: ledger + stamps */
+  .ledger{list-style:none;margin:12px 0;padding:0}
+  .ledger li{display:flex;align-items:baseline;gap:8px;
+    font-family:"IBM Plex Mono",monospace;font-size:13.5px;padding:3px 0}
+  .ledger .dots{flex:1;border-bottom:1.5px dotted var(--line);
+    transform:translateY(-4px)}
+  .total{display:flex;justify-content:space-between;border-top:1.5px solid var(--ink);
+    margin-top:8px;padding-top:8px;font-family:"IBM Plex Mono",monospace;
+    font-weight:600;font-size:17px}
+  .stamp{display:inline-block;font-family:"IBM Plex Mono",monospace;
+    font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    border:1.5px solid var(--flag);color:var(--flag);border-radius:4px;
+    padding:2px 7px;margin:8px 6px 0 0;transform:rotate(-1.4deg)}
+  .stamp.low{border-color:var(--warn);color:var(--warn);transform:rotate(1deg)}
+  .stamp.ok{border-color:var(--accent);color:var(--accent);transform:none}
+  .facility{font-weight:800;font-size:17px}
+  .moved{color:var(--accent);font-size:13px;font-weight:700}
+  .prev-total{color:var(--muted);text-decoration:line-through;
+    font-family:"IBM Plex Mono",monospace;font-size:13px}
+  .quote-card{animation:in .35s ease}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+  @media (prefers-reduced-motion: reduce){.quote-card{animation:none}}
+  pre#report-text{white-space:pre-wrap;font:inherit;margin:0}
+  audio{width:100%;margin-top:8px}
+  .empty{color:var(--muted);font-size:14px;font-style:italic}
+  input[type=file]{font-size:14px}
+  #spec-status{font-family:"IBM Plex Mono",monospace;font-size:13px;
+    color:var(--accent);margin-left:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wordmark">Scan<span>Saver</span> — The Negotiator</div>
+  <div id="vertical-pill">loading…</div>
+</header>
+<main>
+
+  <section>
+    <div class="eyebrow">01 · Intake</div>
+    <h2>Describe the job once</h2>
+    <p class="hint">Talk to the Estimator, or upload a doctor's order / old bill.
+      Both paths produce the same structured spec.</p>
+    <div class="row">
+      <div class="card">
+        <strong>Voice interview</strong>
+        <p class="hint">The Estimator asks what a scheduler would ask, then
+          submits the spec for your confirmation.</p>
+        <div id="widget-mount" class="empty">Estimator agent not provisioned yet
+          — run <span class="mono">python -m scripts.setup_agents</span>.</div>
+      </div>
+      <div class="card">
+        <strong>Upload a document</strong>
+        <p class="hint">Doctor's order, referral, or an old bill (PDF or photo).</p>
+        <input type="file" id="doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+        <div style="margin-top:10px"><button id="parse-btn">Parse into spec</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">02 · Confirm</div>
+    <h2>One spec, reused verbatim on every call</h2>
+    <p class="hint">Review and edit the JSON, then confirm. No calls happen
+      before this.</p>
+    <div class="card">
+      <textarea id="spec-json" placeholder='{"scan_type":"MRI","body_part":"right ankle", ...}'></textarea>
+      <div style="margin-top:10px">
+        <button id="confirm-btn">Confirm spec — ready to call</button>
+        <button class="secondary" id="load-latest-btn">Load latest spec</button>
+        <span id="spec-status"></span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">03 · The calls</div>
+    <h2>Live quote ledger</h2>
+    <p class="hint">Quotes appear here as the Caller logs them mid-call. Start
+      calls with <span class="mono">python -m scripts.start_call --to +1… --facility "…"</span></p>
+    <div class="row" id="quotes"></div>
+    <div class="card" style="margin-top:16px">
+      <strong>Other structured outcomes</strong>
+      <div id="outcomes" class="empty" style="margin-top:6px">none yet</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">04 · The close</div>
+    <h2>Ranked recommendation with evidence</h2>
+    <div class="card">
+      <button id="report-btn">Generate report</button>
+      <div id="report" style="margin-top:14px" class="empty">not generated yet</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let specId = null;
+let lineItemLabels = {};
+
+const fmt = (n) => "$" + Number(n).toLocaleString("en-US",
+  {maximumFractionDigits: 0});
+
+async function loadConfig() {
+  const cfg = await (await fetch("/api/config")).json();
+  $("vertical-pill").textContent = cfg.display_name;
+  cfg.quote_line_items.forEach(li => lineItemLabels[li.id] = li.label);
+  const estId = cfg.agent_ids && cfg.agent_ids.estimator;
+  if (estId) {
+    // ElevenLabs web widget embed.
+    // VERIFY: current embed tag + script URL in docs (search "widget" at
+    // https://elevenlabs.io/docs/llms.txt). The agent must allow public widget
+    // access, or swap this for the JS SDK with auth.
+    $("widget-mount").classList.remove("empty");
+    $("widget-mount").innerHTML = "";
+    const w = document.createElement("elevenlabs-convai");
+    w.setAttribute("agent-id", estId);
+    $("widget-mount").appendChild(w);
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+    s.async = true;
+    document.body.appendChild(s);
+  }
+}
+
+async function loadLatest() {
+  const data = await (await fetch("/api/specs/latest")).json();
+  if (!data.spec) { $("spec-status").textContent = "no spec yet"; return; }
+  specId = data.id;
+  $("spec-json").value = JSON.stringify(data.spec, null, 2);
+  $("spec-status").textContent =
+    `spec ${specId} ${data.confirmed ? "· confirmed" : "· draft"}`;
+}
+
+$("load-latest-btn").onclick = loadLatest;
+
+$("parse-btn").onclick = async () => {
+  const f = $("doc-file").files[0];
+  if (!f) return alert("Choose a file first");
+  $("spec-status").textContent = "parsing…";
+  const fd = new FormData(); fd.append("file", f);
+  const res = await (await fetch("/api/parse-document",
+    {method: "POST", body: fd})).json();
+  specId = res.spec_id;
+  $("spec-json").value = JSON.stringify(res.spec, null, 2);
+  $("spec-status").textContent = `spec ${specId} · draft (from document)`;
+};
+
+$("confirm-btn").onclick = async () => {
+  let spec;
+  try { spec = JSON.parse($("spec-json").value); }
+  catch { return alert("Spec is not valid JSON"); }
+  if (!specId) {
+    const res = await (await fetch("/api/specs", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({spec})})).json();
+    specId = res.spec_id;
+  }
+  await fetch(`/api/specs/${specId}/confirm`, {method: "POST"});
+  $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
+};
+
+function stamp(flag) {
+  const cls = flag.severity === "high" ? "" : " low";
+  return `<span class="stamp${cls}" title="${flag.explanation || ""}">⚑ ${flag.label}</span>`;
+}
+
+function renderQuotes(quotes) {
+  const byFac = {};
+  quotes.forEach(q => (byFac[q.facility_name] ||= []).push(q));
+  const cards = Object.entries(byFac).map(([fac, qs]) => {
+    const q = qs[qs.length - 1];
+    const moved = new Set(qs.map(x => x.total)).size > 1;
+    const prev = moved ? qs[qs.length - 2].total : null;
+    const items = (q.line_items || []).map(li =>
+      `<li><span>${li.label || lineItemLabels[li.id] || li.id}</span>` +
+      `<span class="dots"></span><span>${fmt(li.amount)}</span></li>`).join("");
+    const flags = (q.red_flags || []).map(stamp).join("") ||
+      `<span class="stamp ok">no red flags</span>`;
+    return `<div class="card quote-card">
+      <div class="facility">${fac}</div>
+      ${moved ? `<div class="moved">▾ price moved during call
+        <span class="prev-total">${fmt(prev)}</span></div>` : ""}
+      <ul class="ledger">${items}</ul>
+      <div class="total"><span>${q.itemized ? "itemized total" : "stated total (not itemized)"}</span>
+        <span>${fmt(q.total)}</span></div>
+      <div>${flags}</div>
+      ${q.notes ? `<p class="hint" style="margin:10px 0 0">${q.notes}</p>` : ""}
+    </div>`;
+  });
+  $("quotes").innerHTML = cards.join("") ||
+    `<div class="empty">no quotes logged yet</div>`;
+}
+
+function renderOutcomes(outcomes) {
+  if (!outcomes.length) return;
+  $("outcomes").classList.remove("empty");
+  $("outcomes").innerHTML = outcomes.map(o =>
+    `<div style="margin-bottom:6px"><strong>${o.facility_name}</strong> —
+     <span class="mono">${o.outcome_type}</span>: ${o.details || ""}
+     ${(o.red_flags || []).map(stamp).join("")}</div>`).join("");
+}
+
+async function poll() {
+  try {
+    const data = await (await fetch("/api/quotes")).json();
+    renderQuotes(data.quotes);
+    renderOutcomes(data.outcomes);
+    window._calls = data.calls || [];
+  } catch (e) { /* no confirmed spec yet — fine */ }
+}
+setInterval(poll, 4000);
+
+$("report-btn").onclick = async () => {
+  $("report").textContent = "generating…";
+  const r = await (await fetch("/api/report")).json();
+  $("report").classList.remove("empty");
+  const rows = r.ranked.map((q, i) =>
+    `<li><strong>#${i + 1} ${q.facility_name}</strong> —
+     <span class="mono">${fmt(q.effective_total)}</span> effective
+     ${q.price_moved ? '<span class="moved">· price moved</span>' : ""}
+     ${(q.red_flags || []).map(stamp).join("")}
+     ${q.effective_note ? `<div class="hint">${q.effective_note}</div>` : ""}</li>`
+  ).join("");
+  const audio = (window._calls || []).filter(c => c.conversation_id).map(c =>
+    `<div><span class="mono" style="font-size:12px">${c.facility_name} —
+     ${c.conversation_id}${c.negotiation_mode ? " (negotiation)" : ""}</span>
+     <audio controls preload="none"
+       src="/api/calls/${c.conversation_id}/audio"></audio></div>`).join("");
+  $("report").innerHTML =
+    `<pre id="report-text">${r.recommendation}</pre>
+     <ol style="padding-left:20px">${rows}</ol>
+     <strong>Call recordings</strong>${audio || '<div class="empty">none stored yet</div>'}`;
+};
+
+loadConfig().then(loadLatest).then(poll);
+</script>
+</body>
+</html>

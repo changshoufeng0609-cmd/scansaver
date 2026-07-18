@@ -1,0 +1,134 @@
+{
+  "vertical": "medical_imaging",
+  "display_name": "Medical Imaging — cash-price scans",
+  "currency": "USD",
+  "_design_note": "Everything vertical-specific lives in this file: spec schema, intake questions, benchmarks, red flags, negotiation levers, counterparty market. Swapping this file for another vertical (see moving.example.json) must be enough to retarget the whole system. Never hardcode vertical logic in Python or prompts.",
+
+  "job_spec_schema": {
+    "type": "object",
+    "required": ["scan_type", "body_part", "contrast", "payment_mode", "zip_code"],
+    "properties": {
+      "scan_type": { "type": "string", "enum": ["MRI", "CT", "X-ray", "Ultrasound", "PET", "DEXA", "Mammogram"] },
+      "body_part": { "type": "string", "description": "e.g. right ankle, lumbar spine, head" },
+      "contrast": { "type": "string", "enum": ["without", "with", "with_and_without", "unknown"] },
+      "cpt_code": { "type": "string", "description": "Resolved by backend from cpt_map when possible" },
+      "payment_mode": { "type": "string", "enum": ["cash", "insurance"] },
+      "insurance": {
+        "type": "object",
+        "properties": { "carrier": { "type": "string" }, "plan": { "type": "string" } }
+      },
+      "referral_status": { "type": "string", "enum": ["has_order", "needs_order", "unknown"] },
+      "ordering_provider": { "type": "string" },
+      "urgency": { "type": "string", "enum": ["asap", "this_week", "flexible"] },
+      "zip_code": { "type": "string" },
+      "patient_constraints": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "e.g. claustrophobia (needs open MRI), metal implants, weight limit, pediatric"
+      },
+      "notes": { "type": "string" }
+    }
+  },
+
+  "intake_questions": [
+    { "id": "scan_type", "ask": "What kind of scan do you need — MRI, CT, X-ray, ultrasound, or something else?", "maps_to": "scan_type" },
+    { "id": "body_part", "ask": "Which body part is it for, and which side if that applies?", "maps_to": "body_part" },
+    { "id": "contrast", "ask": "Did your doctor say whether it's with contrast, without, or both? It's fine if you don't know.", "maps_to": "contrast", "unknown_ok": true },
+    { "id": "referral", "ask": "Do you already have a written order or referral from a doctor?", "maps_to": "referral_status" },
+    { "id": "payment", "ask": "Are you planning to pay cash / self-pay, or go through insurance?", "maps_to": "payment_mode" },
+    { "id": "insurance_details", "ask": "Which insurance carrier and plan?", "maps_to": "insurance", "only_if": { "payment_mode": "insurance" } },
+    { "id": "zip", "ask": "What ZIP code should I search around?", "maps_to": "zip_code" },
+    { "id": "urgency", "ask": "How soon do you need it — as soon as possible, this week, or are you flexible?", "maps_to": "urgency" },
+    { "id": "constraints", "ask": "Anything the imaging center should know — claustrophobia, implants, anything like that?", "maps_to": "patient_constraints", "unknown_ok": true }
+  ],
+
+  "cpt_map": {
+    "MRI|ankle|without": { "cpt": "73721", "label": "MRI lower extremity joint w/o contrast" },
+    "MRI|knee|without": { "cpt": "73721", "label": "MRI lower extremity joint w/o contrast" },
+    "MRI|lumbar spine|without": { "cpt": "72148", "label": "MRI lumbar spine w/o contrast" },
+    "CT|head|without": { "cpt": "70450", "label": "CT head/brain w/o contrast" },
+    "X-ray|ankle|without": { "cpt": "73610", "label": "X-ray ankle, complete (3+ views)" }
+  },
+
+  "benchmarks": {
+    "_warning": "EXAMPLE VALUES for development only. The challenge brief demands provable real numbers — before the demo, replace these with real data from the CMS Physician Fee Schedule lookup, hospital price-transparency files, and FAIR Health Consumer for your demo ZIP code. Keep the same shape.",
+    "by_cpt": {
+      "73721": { "label": "MRI lower extremity joint w/o contrast", "medicare_floor": 240, "cash_low": 400, "cash_median": 750, "cash_high": 1600 },
+      "72148": { "label": "MRI lumbar spine w/o contrast", "medicare_floor": 240, "cash_low": 400, "cash_median": 800, "cash_high": 1800 },
+      "70450": { "label": "CT head/brain w/o contrast", "medicare_floor": 120, "cash_low": 225, "cash_median": 500, "cash_high": 1200 },
+      "73610": { "label": "X-ray ankle, complete (3+ views)", "medicare_floor": 35, "cash_low": 60, "cash_median": 150, "cash_high": 400 }
+    }
+  },
+
+  "quote_line_items": [
+    { "id": "technical_fee", "label": "Base / technical fee" },
+    { "id": "radiologist_read", "label": "Radiologist read (professional fee)" },
+    { "id": "facility_fee", "label": "Facility fee" },
+    { "id": "contrast_fee", "label": "Contrast charge" },
+    { "id": "admin_fee", "label": "Admin / records fee" },
+    { "id": "other", "label": "Other" }
+  ],
+
+  "red_flags": [
+    {
+      "id": "refused_to_quote",
+      "type": "outcome",
+      "severity": "high",
+      "label": "Refused to give any price",
+      "explanation": "Federal price transparency rules exist for a reason. A center that won't state a cash price by phone is the single strongest predictor of a surprise bill."
+    },
+    {
+      "id": "below_market",
+      "type": "price",
+      "severity": "high",
+      "rule": { "metric": "total", "op": "lt", "factor": 0.7, "of": "cash_low" },
+      "label": "30%+ below market low",
+      "explanation": "Industry guidance: treat anything 30% below the competition as a warning sign, not a win. Expect the balance to reappear as separate professional or facility fees."
+    },
+    {
+      "id": "no_itemization",
+      "type": "structure",
+      "severity": "medium",
+      "label": "Would not itemize the price",
+      "explanation": "A total that can't be broken into technical fee, radiologist read, and facility fee can't be compared — and can't be held to."
+    },
+    {
+      "id": "unbundled_read",
+      "type": "structure",
+      "severity": "medium",
+      "label": "Radiologist read billed separately, amount unknown",
+      "explanation": "The classic surprise-bill vector: the scan is quoted, the read arrives later as a second bill."
+    },
+    {
+      "id": "above_market",
+      "type": "price",
+      "severity": "low",
+      "rule": { "metric": "total", "op": "gt", "factor": 1.0, "of": "cash_high" },
+      "label": "Above typical market high",
+      "explanation": "Not dangerous, just expensive. Useful leverage for other calls."
+    }
+  ],
+
+  "negotiation_levers": [
+    { "id": "competing_quote", "requires_best_quote": true, "line": "I already have a written cash quote for the exact same scan from another imaging center. Can you match or beat it?" },
+    { "id": "medicare_anchor", "requires_best_quote": false, "line": "Medicare reimburses far less for this exact study — I understand cash rates are higher, but can you get closer?" },
+    { "id": "prompt_pay", "requires_best_quote": false, "line": "If I pay in full at booking, is there a prompt-pay or self-pay discount?" },
+    { "id": "all_in_guarantee", "requires_best_quote": false, "line": "Can you confirm that price is all-in — technical fee, radiologist read, and facility fee — and email it in writing?" }
+  ],
+
+  "honesty_rules": [
+    "If asked whether you are an AI, a robot, or a real person, answer truthfully in one short sentence, then return to the task. Never deny being an AI.",
+    "You are calling on behalf of a real patient with a real, confirmed job spec. Never invent symptoms, orders, insurance details, or anything not in the spec.",
+    "Only cite competing quotes that were actually collected and passed to you. If you have none, do not imply that you do.",
+    "Never fabricate a price, a deadline, or another center's offer to create pressure.",
+    "If you don't know something about the patient's situation, say you'll check rather than guessing."
+  ],
+
+  "call_outcomes": ["itemized_quote", "callback_commitment", "documented_decline"],
+
+  "counterparty_market": [
+    { "agent_key": "stonewaller", "facility_name": "Summit Imaging Center" },
+    { "agent_key": "lowballer", "facility_name": "ValueScan Radiology" },
+    { "agent_key": "upseller", "facility_name": "Premier Diagnostic Imaging" }
+  ]
+}
