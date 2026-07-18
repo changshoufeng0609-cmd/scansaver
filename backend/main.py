@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 load_dotenv()
 
-from . import db, elevenlabs_client, redflags, report  # noqa: E402
+from . import calls, db, elevenlabs_client, redflags, report  # noqa: E402
 from .parse_document import parse_document  # noqa: E402
 from .spec_utils import get_benchmark, load_config  # noqa: E402
 
@@ -155,6 +155,26 @@ async def tool_log_outcome(request: Request):
         red_flags=flags,
     )
     return {"outcome_id": oid}
+
+
+# ---------- launch calls from the dashboard ----------
+
+@app.post("/api/calls/start")
+async def api_start_call(request: Request):
+    """Dashboard button: dial a number as the Caller agent. Same spec-verbatim
+    launcher as scripts/start_call.py."""
+    body = await request.json()
+    to_number = (body.get("to_number") or "").strip()
+    facility = (body.get("facility_name") or "").strip()
+    if not to_number.startswith("+") or not facility:
+        raise HTTPException(400, "to_number (E.164, +1...) and facility_name are required")
+    try:
+        out = calls.start_call(to_number, facility,
+                               negotiate=bool(body.get("negotiate")),
+                               spec_id=body.get("spec_id"))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"conversation_id": out["conversation_id"], "spec_id": out["spec_id"]}
 
 
 # ---------- ElevenLabs post-call webhook ----------

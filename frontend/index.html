@@ -115,8 +115,25 @@
   <section>
     <div class="eyebrow">03 · The calls</div>
     <h2>Live quote ledger</h2>
-    <p class="hint">Quotes appear here as the Caller logs them mid-call. Start
-      calls with <span class="mono">python -m scripts.start_call --to +1… --facility "…"</span></p>
+    <p class="hint">Dial a facility below (or via <span class="mono">python -m
+      scripts.start_call</span>); quotes appear as the Caller logs them mid-call.</p>
+    <div class="card" style="margin-bottom:16px">
+      <strong>Start a call</strong>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+        <input type="tel" id="call-to" placeholder="+16505551234"
+          style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
+                 border:1px solid var(--line);border-radius:8px;width:180px" />
+        <input type="text" id="call-facility" list="facility-list"
+          placeholder="Facility name" style="font-size:14px;padding:9px 12px;
+                 border:1px solid var(--line);border-radius:8px;width:230px" />
+        <datalist id="facility-list"></datalist>
+        <label style="font-size:14px;display:flex;gap:6px;align-items:center">
+          <input type="checkbox" id="call-negotiate" /> negotiate (round 2)
+        </label>
+        <button id="call-btn">Call</button>
+        <span id="call-status" class="mono" style="font-size:13px"></span>
+      </div>
+    </div>
     <div class="row" id="quotes"></div>
     <div class="card" style="margin-top:16px">
       <strong>Other structured outcomes</strong>
@@ -147,6 +164,8 @@ async function loadConfig() {
   const cfg = await (await fetch("/api/config")).json();
   $("vertical-pill").textContent = cfg.display_name;
   cfg.quote_line_items.forEach(li => lineItemLabels[li.id] = li.label);
+  $("facility-list").innerHTML = (cfg.counterparty_market || [])
+    .map(cp => `<option value="${cp.facility_name}"></option>`).join("");
   const estId = cfg.agent_ids && cfg.agent_ids.estimator;
   if (estId) {
     // ElevenLabs web widget embed — verified 2026-07-18 against
@@ -200,6 +219,28 @@ $("confirm-btn").onclick = async () => {
   }
   await fetch(`/api/specs/${specId}/confirm`, {method: "POST"});
   $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
+};
+
+$("call-btn").onclick = async () => {
+  const to = $("call-to").value.trim();
+  const facility = $("call-facility").value.trim();
+  if (!to.startsWith("+")) return alert("Number must be E.164, e.g. +16505551234");
+  if (!facility) return alert("Enter a facility name (used for logging + the agent's script)");
+  $("call-btn").disabled = true;
+  $("call-status").textContent = "dialing…";
+  try {
+    const res = await fetch("/api/calls/start", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({to_number: to, facility_name: facility,
+                            negotiate: $("call-negotiate").checked})});
+    const data = await res.json();
+    $("call-status").textContent = res.ok
+      ? `ringing — ${data.conversation_id}` : `error: ${data.detail}`;
+  } catch (e) {
+    $("call-status").textContent = "error: " + e;
+  } finally {
+    $("call-btn").disabled = false;
+  }
 };
 
 function stamp(flag) {
