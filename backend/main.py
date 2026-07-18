@@ -4,6 +4,7 @@ events, and the API behind the frontend dashboard.
 Run:    uvicorn backend.main:app --reload --port 8000
 Expose: ngrok http 8000   -> put the https URL in .env as PUBLIC_BASE_URL
 """
+import base64
 import hashlib
 import hmac
 import json
@@ -159,9 +160,10 @@ async def tool_log_outcome(request: Request):
 # ---------- ElevenLabs post-call webhook ----------
 
 def _verify_signature(raw: bytes, header: str | None) -> bool:
-    """HMAC check for post-call webhooks.
-    VERIFY: header name + format in docs (/docs/agents-platform/workflows/post-call-webhooks).
-    Expected at scaffold time: 'elevenlabs-signature: t=<ts>,v0=<hex hmac_sha256(secret, f\"{ts}.{body}\")>'
+    """HMAC check for post-call webhooks. Verified 2026-07-18 against the
+    official SDK (elevenlabs.webhooks.construct_event): header
+    'elevenlabs-signature: t=<ts>,v0=<hex hmac_sha256(secret, f"{ts}.{body}")>',
+    30-minute timestamp tolerance.
     Skipped (returns True) when ELEVENLABS_WEBHOOK_SECRET is unset — fine for a hackathon over ngrok."""
     secret = os.environ.get("ELEVENLABS_WEBHOOK_SECRET")
     if not secret:
@@ -182,11 +184,12 @@ def _verify_signature(raw: bytes, header: str | None) -> bool:
 
 @app.post("/webhooks/post_call")
 async def post_call_webhook(request: Request):
-    """Stores transcript + metadata per conversation.
-    VERIFY: payload shape in docs. Expected at scaffold time:
-    { "type": "post_call_transcription", "data": { "conversation_id", "status",
-      "transcript": [{"role","message",...}],
-      "conversation_initiation_client_data": {"dynamic_variables": {...}}, ... } }"""
+    """Stores transcript + metadata per conversation. Payload shape verified
+    2026-07-18: { "type": "post_call_transcription" | "post_call_audio" |
+    "call_initiation_failure", "event_timestamp": ..., "data": {...} }.
+    Transcription data: conversation_id, status, transcript [{role, message}],
+    conversation_initiation_client_data.dynamic_variables.
+    Audio data: conversation_id + base64 mp3 in full_audio (nothing else)."""
     raw = await request.body()
     if not _verify_signature(raw, request.headers.get("elevenlabs-signature")):
         raise HTTPException(401, "bad signature")
@@ -195,6 +198,13 @@ async def post_call_webhook(request: Request):
     cid = data.get("conversation_id")
     if not cid:
         return {"ok": True, "note": "no conversation_id; ignored"}
+
+    if body.get("type") == "post_call_audio":
+        dest = ROOT / "data" / "audio" / f"{cid}.mp3"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(base64.b64decode(data.get("full_audio", "")))
+        return {"ok": True, "note": "audio stored"}
+
     dyn = (data.get("conversation_initiation_client_data") or {}).get(
         "dynamic_variables", {})
     db.upsert_call(

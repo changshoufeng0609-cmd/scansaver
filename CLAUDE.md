@@ -74,12 +74,19 @@ open http://localhost:8000      # dashboard
 | `ELEVENLABS_API_KEY` | required |
 | `ELEVENLABS_PHONE_NUMBER_ID` | id of a Twilio number imported in ElevenLabs → Phone Numbers |
 | `ELEVENLABS_WEBHOOK_SECRET` | optional; enables HMAC check on `/webhooks/post_call` |
-| `ELEVENLABS_LLM` | LLM id string for agents (default `claude-sonnet-4` — VERIFY) |
+| `ELEVENLABS_LLM` | LLM id string for agents (default `claude-sonnet-4-5`; verified enum also has `claude-sonnet-4-6`, `claude-haiku-4-5`, `claude-opus-4-7`) |
 | `ANTHROPIC_API_KEY` | for document parsing + report writing |
 | `PUBLIC_BASE_URL` | ngrok https URL; baked into agent tool URLs at setup time |
 | `VERTICAL_CONFIG` | default `config/medical_imaging.json` |
 
 ## Verify with live docs — DO THIS FIRST
+
+> **Status: verification pass completed 2026-07-18.** Docs moved to the
+> `/docs/eleven-agents/` namespace. Main drift found and fixed: agent tools are
+> now workspace resources (`POST /v1/convai/tools` → reference via
+> `prompt.tool_ids`); inline `prompt.tools` no longer exists. Items 1–6 fixed
+> in place; item 7 (voice ids) is checked at `setup_agents` runtime against
+> `GET /v1/voices`. Re-run this list if the API misbehaves later.
 
 The ElevenLabs API moves fast; the scaffold marks every assumption with
 `VERIFY`. Docs are agent-friendly: append `.md` to any docs URL for markdown,

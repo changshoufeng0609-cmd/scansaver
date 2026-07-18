@@ -21,16 +21,19 @@ load_dotenv()
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backend.elevenlabs_client import create_agent, webhook_tool  # noqa: E402
+from backend.elevenlabs_client import (create_agent, create_tool, delete_agent,  # noqa: E402
+                                       delete_tool, list_voice_ids, webhook_tool)
 from backend.spec_utils import line_item_checklist, load_config, render_lever_lines  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = ROOT / "agents"
 
-# VERIFY: exact LLM id strings in ElevenLabs docs (/docs/agents-platform/customization/llm).
-DEFAULT_LLM = os.environ.get("ELEVENLABS_LLM", "claude-sonnet-4")
+# Verified against the live LLM enum 2026-07-18. Other valid Anthropic ids:
+# claude-sonnet-4-6, claude-sonnet-4, claude-haiku-4-5, claude-opus-4-7.
+DEFAULT_LLM = os.environ.get("ELEVENLABS_LLM", "claude-sonnet-4-5")
 
-# Premade ElevenLabs voices — swap freely; VERIFY ids in your dashboard's Voices tab.
+# Premade ElevenLabs voices — swap freely; ids are checked against the
+# workspace's voice list at setup time and fall back to default if missing.
 VOICES = {
     "estimator": "21m00Tcm4TlvDq8ikWAM",   # Rachel
     "caller": "pNInz6obpgDQGcFmaJgB",      # Adam
@@ -50,12 +53,49 @@ def render(template_path: Path, replacements: dict) -> str:
     return text
 
 
+def cleanup_previous_run(ids_path: Path):
+    """Agents + tools are workspace resources; delete last run's before
+    recreating so reruns don't litter the workspace."""
+    if not ids_path.exists():
+        return
+    old = json.loads(ids_path.read_text())
+    for key, agent_id in old.items():
+        if key == "_tools":
+            continue
+        try:
+            delete_agent(agent_id)
+        except Exception as e:
+            print(f"  (could not delete old agent {key}: {e})")
+    for name, tool_id in old.get("_tools", {}).items():
+        try:
+            delete_tool(tool_id)
+        except Exception as e:
+            print(f"  (could not delete old tool {name}: {e})")
+
+
+def checked_voice(voice_ids: set[str] | None, key: str) -> str | None:
+    vid = VOICES.get(key)
+    if vid and voice_ids is not None and vid not in voice_ids:
+        print(f"  WARNING: voice {vid} ({key}) not in workspace — using agent default voice.")
+        return None
+    return vid
+
+
 def main():
     config = load_config()
     base_url = os.environ.get("PUBLIC_BASE_URL")
     if not base_url:
         raise SystemExit("Set PUBLIC_BASE_URL in .env (your ngrok https URL) first.")
     base_url = base_url.rstrip("/")
+
+    try:
+        voice_ids = list_voice_ids()
+    except Exception as e:
+        print(f"  (could not list voices, skipping voice check: {e})")
+        voice_ids = None
+
+    ids_path = AGENTS_DIR / "agent_ids.json"
+    cleanup_previous_run(ids_path)
 
     intake_q = "\n".join(
         f"- ({q['id']}) {q['ask']}"
@@ -73,6 +113,7 @@ def main():
     }
 
     ids = {}
+    tool_ids = {}
 
     # ---- The Estimator (intake) ----
     spec_props = config["job_spec_schema"]["properties"]
@@ -85,15 +126,16 @@ def main():
                              "description": "The full job spec object."}},
         required=["spec"],
     )
+    tool_ids["submit_spec"] = create_tool(submit_spec)
     ids["estimator"] = create_agent(
         name="ScanSaver — Estimator",
         system_prompt=render(AGENTS_DIR / "estimator.md", common),
         first_message=("Hi! I'll help you shop this around so you never overpay. "
                        "First, a couple of quick questions — what kind of scan do "
                        "you need?"),
-        tools=[submit_spec],
+        tool_ids=[tool_ids["submit_spec"]],
         llm=DEFAULT_LLM,
-        voice_id=VOICES["estimator"],
+        voice_id=checked_voice(voice_ids, "estimator"),
     )
 
     # ---- The Caller / Closer (outbound) ----
@@ -128,14 +170,16 @@ def main():
         },
         required=["facility_name", "outcome_type", "details"],
     )
+    tool_ids["log_quote"] = create_tool(log_quote)
+    tool_ids["log_outcome"] = create_tool(log_outcome)
     ids["caller"] = create_agent(
         name="ScanSaver — Caller/Closer",
         system_prompt=render(AGENTS_DIR / "caller.md", common),
         first_message=("Hi, I'm calling to get a price on a scan for a customer "
                        "— do you have a quick minute?"),
-        tools=[log_quote, log_outcome],
+        tool_ids=[tool_ids["log_quote"], tool_ids["log_outcome"]],
         llm=DEFAULT_LLM,
-        voice_id=VOICES["caller"],
+        voice_id=checked_voice(voice_ids, "caller"),
     )
 
     # ---- Counterparty market (for agent-to-agent runs / rehearsal) ----
@@ -150,19 +194,21 @@ def main():
             system_prompt=path.read_text(encoding="utf-8"),
             first_message=f"Thanks for calling {cp['facility_name']}, how can I help you?",
             llm=DEFAULT_LLM,
-            voice_id=VOICES.get(key),
+            voice_id=checked_voice(voice_ids, key),
         )
 
-    out = AGENTS_DIR / "agent_ids.json"
-    out.write_text(json.dumps(ids, indent=2))
-    print(f"Wrote {out}:\n{json.dumps(ids, indent=2)}")
-    print("\nNext steps:")
-    print("  1. In the ElevenLabs dashboard, set the Estimator agent to allow the")
-    print("     public web widget (or wire SDK auth) so frontend/index.html can load it.")
-    print("  2. Point your workspace post-call webhook at "
-          f"{base_url}/webhooks/post_call")
-    print("  3. Import a Twilio number (Phone Numbers tab) and put its id in .env "
-          "as ELEVENLABS_PHONE_NUMBER_ID.")
+    ids["_tools"] = tool_ids
+    ids_path.write_text(json.dumps(ids, indent=2))
+    print(f"Wrote {ids_path}:\n{json.dumps(ids, indent=2)}")
+    print("\nNext steps (dashboard, one-time):")
+    print("  1. Estimator agent → Advanced tab → disable authentication ('public"
+          " agent') so the web widget in frontend/index.html can load it. "
+          "Optionally add your domain in Security → Allowlist.")
+    print("  2. ElevenAgents settings → post-call webhooks → point at "
+          f"{base_url}/webhooks/post_call (enable 'transcription'; 'audio' too "
+          "if you want recordings pushed instead of pulled).")
+    print("  3. Phone Numbers tab → import your Twilio number, copy its id into "
+          ".env as ELEVENLABS_PHONE_NUMBER_ID.")
 
 
 if __name__ == "__main__":

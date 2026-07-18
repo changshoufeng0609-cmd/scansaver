@@ -149,10 +149,10 @@ async function loadConfig() {
   cfg.quote_line_items.forEach(li => lineItemLabels[li.id] = li.label);
   const estId = cfg.agent_ids && cfg.agent_ids.estimator;
   if (estId) {
-    // ElevenLabs web widget embed.
-    // VERIFY: current embed tag + script URL in docs (search "widget" at
-    // https://elevenlabs.io/docs/llms.txt). The agent must allow public widget
-    // access, or swap this for the JS SDK with auth.
+    // ElevenLabs web widget embed — verified 2026-07-18 against
+    // /docs/eleven-agents/customization/widget: <elevenlabs-convai agent-id>
+    // + unpkg script. The agent must be public (Advanced tab → disable
+    // authentication), or swap this for the JS SDK with auth.
     $("widget-mount").classList.remove("empty");
     $("widget-mount").innerHTML = "";
     const w = document.createElement("elevenlabs-convai");
