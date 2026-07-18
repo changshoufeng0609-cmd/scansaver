@@ -1,5 +1,5 @@
 """The Closer's output: rank all quotes, attach red flags and transcript
-evidence, and produce a plain-language recommendation (via Anthropic API, with a
+evidence, and produce a plain-language recommendation (via OpenAI API, with a
 deterministic fallback so the demo never blanks).
 
 Ranking policy (simple, defensible, explainable):
@@ -17,8 +17,8 @@ import httpx
 from . import db
 from .spec_utils import get_benchmark, load_config, spec_to_job_summary
 
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
 ASSUMED_READ_FEE = 200  # used only when a quote excludes the read; explained in report
 
 
@@ -99,10 +99,10 @@ def generate_report(spec_id: str) -> dict:
     evidence = _transcript_snippets(spec_id)
 
     recommendation = _fallback_text(data)
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
         try:
-            recommendation = _claude_recommendation(data, evidence, config, api_key)
+            recommendation = _llm_recommendation(data, evidence, config, api_key)
         except Exception as e:  # never let the report page blank in a demo
             recommendation += f"\n\n(LLM explanation unavailable: {e})"
 
@@ -122,38 +122,36 @@ def _fallback_text(data: dict) -> str:
     )
 
 
-def _claude_recommendation(data: dict, evidence: str, config: dict,
-                           api_key: str) -> str:
+def _llm_recommendation(data: dict, evidence: str, config: dict,
+                        api_key: str) -> str:
     summary = spec_to_job_summary(data["spec"], config)
     payload = {
         "model": MODEL,
-        "max_tokens": 700,
-        "system": (
-            "You write the final consumer-facing recommendation for a "
-            "price-shopping voice agent. Plain language, no hype. Explain which "
-            "offer to take and why, why the runners-up lost (cite red flags), "
-            "and quote 1-2 short verbatim lines from the transcripts as "
-            "evidence, attributed to the facility. If any price moved during a "
-            "call, call that out explicitly. Under 250 words."
-        ),
-        "messages": [{
-            "role": "user",
-            "content": (
+        "max_completion_tokens": 700,
+        "messages": [
+            {"role": "system", "content": (
+                "You write the final consumer-facing recommendation for a "
+                "price-shopping voice agent. Plain language, no hype. Explain which "
+                "offer to take and why, why the runners-up lost (cite red flags), "
+                "and quote 1-2 short verbatim lines from the transcripts as "
+                "evidence, attributed to the facility. If any price moved during a "
+                "call, call that out explicitly. Under 250 words."
+            )},
+            {"role": "user", "content": (
                 f"Job: {summary}\n\n"
                 f"Benchmark: {json.dumps(data['benchmark'])}\n\n"
                 f"Ranked quotes: {json.dumps(data['ranked'], default=str)}\n\n"
                 f"Declines: {json.dumps(data['declines'], default=str)}\n\n"
                 f"Callbacks: {json.dumps(data['callbacks'], default=str)}\n\n"
                 f"Transcript evidence:\n{evidence}"
-            ),
-        }],
+            )},
+        ],
     }
     r = httpx.post(
-        ANTHROPIC_URL,
-        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
-                 "content-type": "application/json"},
+        OPENAI_URL,
+        headers={"Authorization": f"Bearer {api_key}",
+                 "Content-Type": "application/json"},
         json=payload, timeout=60,
     )
     r.raise_for_status()
-    return "".join(b.get("text", "") for b in r.json()["content"]
-                   if b.get("type") == "text")
+    return r.json()["choices"][0]["message"]["content"]

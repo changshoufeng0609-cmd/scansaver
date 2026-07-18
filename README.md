@@ -5,9 +5,9 @@ the same machine. ScanSaver interviews you once, phones the imaging centers,
 extracts real itemized cash prices, negotiates using your best competing quote,
 and hands you a ranked report with transcripts and recordings as evidence.
 
-Built on **ElevenLabs Agents** (voice) + **Claude** (agent brains, document
-parsing, report writing) + **FastAPI/SQLite** (glue) for the Hack-Nation
-"The Negotiator" challenge.
+Built on **ElevenLabs Agents** (voice, with Claude as the hosted agent brain) +
+**OpenAI** (document parsing, report writing) + **FastAPI/SQLite** (glue) for
+the Hack-Nation "The Negotiator" challenge.
 
 ## Quickstart
 

@@ -42,7 +42,7 @@ fully before changing code.
 
 ```
 voice widget ──► Estimator agent ──submit_spec──► FastAPI ──► SQLite
-document ─────► parse_document (Claude vision) ──► same spec schema
+document ─────► parse_document (OpenAI vision) ──► same spec schema
 user confirms spec (frontend 02)
 scripts/start_call.py ──► ElevenLabs outbound (Twilio) ──► Caller agent
         │ dynamic vars: spec_id, job_summary, negotiation_mode, best_quote_line
@@ -75,7 +75,8 @@ open http://localhost:8000      # dashboard
 | `ELEVENLABS_PHONE_NUMBER_ID` | id of a Twilio number imported in ElevenLabs → Phone Numbers |
 | `ELEVENLABS_WEBHOOK_SECRET` | optional; enables HMAC check on `/webhooks/post_call` |
 | `ELEVENLABS_LLM` | LLM id string for agents (default `claude-sonnet-4-5`; verified enum also has `claude-sonnet-4-6`, `claude-haiku-4-5`, `claude-opus-4-7`) |
-| `ANTHROPIC_API_KEY` | for document parsing + report writing |
+| `OPENAI_API_KEY` | for document parsing + report writing |
+| `OPENAI_MODEL` | optional; default `gpt-4o` (needs vision + PDF file input) |
 | `PUBLIC_BASE_URL` | ngrok https URL; baked into agent tool URLs at setup time |
 | `VERTICAL_CONFIG` | default `config/medical_imaging.json` |
 
