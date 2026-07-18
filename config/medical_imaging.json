@@ -180,34 +180,34 @@
     }
   },
   "benchmarks": {
-    "_warning": "EXAMPLE VALUES for development only. The challenge brief demands provable real numbers — before the demo, replace these with real data from the CMS Physician Fee Schedule lookup, hospital price-transparency files, and FAIR Health Consumer for your demo ZIP code. Keep the same shape.",
+    "_warning": "REAL DATA (updated 2026-07-18) for demo ZIP 94301 (Palo Alto, CA). medicare_floor = CMS Physician Fee Schedule CY2026 national non-facility global (conversion factor $33.40; cms.gov PFS lookup / payerprice.com). Cash ranges: newchoicehealth.com Palo Alto medians (lower-extremity MRI median $614, low $440; area MRI avg $1,214), radiologyassist.com Mountain View self-pay MRI from $385, cost.sidecarhealth.com CA radiology cash prices, KQED Bay Area back-MRI spread $255-$3,700. Hospital-affiliated (e.g. Stanford) sit at the high end; independent imaging centers at the low end.",
     "by_cpt": {
       "73721": {
         "label": "MRI lower extremity joint w/o contrast",
-        "medicare_floor": 240,
-        "cash_low": 400,
-        "cash_median": 750,
-        "cash_high": 1600
+        "medicare_floor": 230,
+        "cash_low": 385,
+        "cash_median": 625,
+        "cash_high": 1550
       },
       "72148": {
         "label": "MRI lumbar spine w/o contrast",
-        "medicare_floor": 240,
-        "cash_low": 400,
+        "medicare_floor": 205,
+        "cash_low": 350,
         "cash_median": 800,
-        "cash_high": 1800
+        "cash_high": 2800
       },
       "70450": {
         "label": "CT head/brain w/o contrast",
-        "medicare_floor": 120,
+        "medicare_floor": 107,
         "cash_low": 225,
         "cash_median": 500,
-        "cash_high": 1200
+        "cash_high": 1400
       },
       "73610": {
         "label": "X-ray ankle, complete (3+ views)",
-        "medicare_floor": 35,
+        "medicare_floor": 37,
         "cash_low": 60,
-        "cash_median": 150,
+        "cash_median": 140,
         "cash_high": 400
       }
     }
