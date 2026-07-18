@@ -10,10 +10,10 @@
 
 | Milestone | Status |
 |---|---|
-| M0 env / M1 agents / M2 voice intake / M3 document parsing | ✅ done |
-| M8 real market benchmarks (CMS + Bay Area cash prices, ZIP 94301) | ✅ done |
-| M4 first live call | ⚠️ works end-to-end, but test-call audio was choppy — needs a retest |
-| M5 market round / M6 negotiation round / M7 report | ⏳ rehearsal, blocked on M4 |
+| M0 env / M1 agents / M2 voice intake / M3 document parsing | done |
+| M8 real market benchmarks (CMS + Bay Area cash prices, ZIP 94301) | done |
+| M4 first live call | works end-to-end, but test-call audio was choppy — needs a retest |
+| M5 market round / M6 negotiation round / M7 report | rehearsal, blocked on M4 |
 
 ## Who does what
 
@@ -105,7 +105,7 @@ Need a clean slate? Delete `data/scansaver.db` — it recreates itself empty.
 5. Mic drop: swap the config to `moving.example.json` — same system, different
    industry, zero code changes
 
-## Hard rules (we get graded on these — don't break them)
+## Hard rules (we get graded on these, we can discuss about that)
 
 - **Never call real clinics.** Test and demo calls go to our own phones only.
 - **Never fake a quote.** The negotiation leverage must come from a real quote
