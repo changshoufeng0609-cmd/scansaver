@@ -279,6 +279,7 @@ $("confirm-btn").onclick = async () => {
   $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
 };
 
+let apWasRunning = false;
 async function pollAutopilot() {
   try {
     const d = await (await fetch("/api/autopilot")).json();
@@ -288,6 +289,8 @@ async function pollAutopilot() {
     if (show) $("autopilot-log").innerHTML =
       d.log.map(l => `<div>${l}</div>`).join("") +
       (d.running ? '<div>⏳ running…</div>' : "");
+    if (apWasRunning && !d.running) $("report-btn").click();  // zero-click finish
+    apWasRunning = d.running;
   } catch (e) { /* backend restarting */ }
 }
 setInterval(pollAutopilot, 4000);

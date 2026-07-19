@@ -21,7 +21,10 @@ from . import calls, elevenlabs_client
 from .report import rank_quotes
 from .spec_utils import load_config
 
-STATE = {"enabled": False, "running": False, "log": []}
+# Enabled by default: the product promise is "one phone call in, ranked report
+# out, zero clicks". Flip the dashboard toggle off while developing/testing so
+# a stray intake doesn't dial the whole market.
+STATE = {"enabled": True, "running": False, "log": []}
 
 
 def _log(msg: str):
