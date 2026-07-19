@@ -67,6 +67,15 @@ python -m scripts.start_call --to +1XXXXXXXXXX --facility "Premier Diagnostic Im
 open http://localhost:8000      # dashboard
 ```
 
+> **If the API key is shared across laptops:** `setup_agents.py` deletes and
+> recreates every agent + tool in the workspace on every run. Two people
+> running it independently (e.g. each with their own ngrok domain in `.env`)
+> produces duplicate agents/tools with no clean way to tell them apart — this
+> happened once (2026-07-19, 21 duplicate tools, cleaned up via `?force=true`
+> on `DELETE /v1/convai/tools/{id}`). Only rerun it after an actual
+> prompt/config change; to just switch which backend receives live traffic,
+> use `python -m scripts.assign_inbound <agent_key>` instead.
+
 ## Environment
 
 | Var | Notes |

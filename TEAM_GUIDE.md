@@ -17,19 +17,32 @@
 
 ## Who does what
 
-- **Only ONE laptop runs the system** (Shou-Feng's — the backend, database,
-  ngrok tunnel, and ElevenLabs workspace all live there). Nobody else needs to
-  set anything up.
+- **Anyone can run the backend now** (their own laptop, own ngrok domain), but
+  the **ElevenLabs workspace + phone number are shared** via one API key. Only
+  one of us should be "live" at a time — whoever is testing runs their own
+  `./start.sh`, then `python -m scripts.assign_inbound <agent_key>` and
+  `python -m scripts.setup_agents` if the tool URLs need to point at their
+  domain. Ping the channel before you do this so we're not fighting over who's
+  wired up.
+- **Do not run `scripts/setup_agents.py` casually.** It deletes and recreates
+  every agent + tool in the shared workspace. Two people running it back-to-back
+  is how we ended up with 21 duplicate tools once already (cleaned up
+  2026-07-19). Only rerun it after an actual prompt/config change, and say so
+  before you do.
+- `agents/agent_ids.json` is gitignored (per-machine) — it's not how we sync
+  who's "the" active agent set. The shared ElevenLabs workspace is the source
+  of truth; use `assign_inbound` to point the shared number at whichever
+  agent set is currently live, not a fresh `setup_agents` run.
 - **Playing a clinic receptionist?** You literally just need your phone and the
   cheat sheet below. Full scripts live in `agents/counterparties/*.md` — read
   yours once, the calls are in English.
 - **Touching code?** Clone the repo, open a PR. Secrets (`.env`) are not in
-  git — ask Shou-Feng.
+  git — ask whoever's driving for the current values.
 
 ## How to drive it
 
-Dashboard: http://localhost:8000 on the host laptop (there's also a public
-tunnel URL — ask Shou-Feng for it; not published here on purpose).
+Dashboard: http://localhost:8000 on whoever's laptop is currently live (there's
+also a public tunnel URL — ask them for it; not published here on purpose).
 
 1. **01 · Intake** — talk to the Estimator widget (in English), or upload a
    doctor's order photo. You can also just call **+1 605 566 4795** — the
