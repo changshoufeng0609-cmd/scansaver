@@ -54,11 +54,15 @@ def index():
 @app.get("/api/config")
 def api_config():
     config = load_config()
+    market = [
+        {**cp, "phone": autopilot._phone(cp)}
+        for cp in config.get("counterparty_market", [])
+    ]
     return {
         "vertical": config["vertical"],
         "display_name": config["display_name"],
         "quote_line_items": config["quote_line_items"],
-        "counterparty_market": config.get("counterparty_market", []),
+        "counterparty_market": market,
         "agent_ids": _agent_ids(),
     }
 

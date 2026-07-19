@@ -122,23 +122,27 @@
         float:right;font-size:14px;cursor:pointer">
         <input type="checkbox" id="autopilot-toggle"/> Autopilot
       </label>
-      <strong>Start a call</strong>
+      <strong>The market</strong>
       <div id="autopilot-log" class="mono" style="display:none;font-size:12.5px;
         margin-top:8px;color:var(--accent)"></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-        <input type="tel" id="call-to" placeholder="+16505551234"
-          style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
-                 border:1px solid var(--line);border-radius:8px;width:180px" />
-        <input type="text" id="call-facility" list="facility-list"
-          placeholder="Facility name" style="font-size:14px;padding:9px 12px;
-                 border:1px solid var(--line);border-radius:8px;width:230px" />
-        <datalist id="facility-list"></datalist>
-        <label style="font-size:14px;display:flex;gap:6px;align-items:center">
-          <input type="checkbox" id="call-negotiate" /> negotiate (round 2)
-        </label>
-        <button id="call-btn">Call</button>
-        <span id="call-status" class="mono" style="font-size:13px"></span>
-      </div>
+      <ul class="ledger" id="market-rows" style="margin-top:10px"></ul>
+      <details style="margin-top:8px">
+        <summary class="hint" style="cursor:pointer">Call another number…</summary>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+          <input type="tel" id="call-to" placeholder="+16505551234"
+            style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
+                   border:1px solid var(--line);border-radius:8px;width:180px" />
+          <input type="text" id="call-facility" list="facility-list"
+            placeholder="Facility name" style="font-size:14px;padding:9px 12px;
+                   border:1px solid var(--line);border-radius:8px;width:230px" />
+          <datalist id="facility-list"></datalist>
+          <label style="font-size:14px;display:flex;gap:6px;align-items:center">
+            <input type="checkbox" id="call-negotiate" /> negotiate (round 2)
+          </label>
+          <button id="call-btn">Call</button>
+        </div>
+      </details>
+      <div style="margin-top:6px"><span id="call-status" class="mono" style="font-size:13px"></span></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13.5px">
         <span class="mono" id="inbound-number" style="color:var(--muted)">inbound —</span>
         <span>answered by</span>
@@ -178,10 +182,40 @@ let lineItemLabels = {};
 const fmt = (n) => "$" + Number(n).toLocaleString("en-US",
   {maximumFractionDigits: 0});
 
+async function startCall(to, facility, negotiate) {
+  $("call-status").textContent = `dialing ${facility}…`;
+  try {
+    const res = await fetch("/api/calls/start", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({to_number: to, facility_name: facility, negotiate})});
+    const data = await res.json();
+    $("call-status").textContent = res.ok
+      ? `ringing ${facility} — ${data.conversation_id}` : `error: ${data.detail}`;
+  } catch (e) { $("call-status").textContent = "error: " + e; }
+}
+
+function renderMarket(market) {
+  $("market-rows").innerHTML = (market || []).map((cp, i) => {
+    const phone = cp.phone || "";
+    return `<li style="padding:6px 0">
+      <span><strong>${cp.facility_name}</strong></span>
+      <span class="dots"></span>
+      <span style="color:var(--muted)">${phone || "no number set"}</span>
+      <button style="padding:4px 12px;font-size:13px;margin-left:10px"
+        ${phone ? "" : "disabled"}
+        onclick="startCall('${phone}','${cp.facility_name}',false)">Call</button>
+      <button class="secondary" style="padding:4px 12px;font-size:13px;margin-left:4px"
+        ${phone ? "" : "disabled"}
+        onclick="startCall('${phone}','${cp.facility_name}',true)">Negotiate</button>
+    </li>`;
+  }).join("");
+}
+
 async function loadConfig() {
   const cfg = await (await fetch("/api/config")).json();
   $("vertical-pill").textContent = cfg.display_name;
   cfg.quote_line_items.forEach(li => lineItemLabels[li.id] = li.label);
+  renderMarket(cfg.counterparty_market);
   $("facility-list").innerHTML = (cfg.counterparty_market || [])
     .map(cp => `<option value="${cp.facility_name}"></option>`).join("");
   const estId = cfg.agent_ids && cfg.agent_ids.estimator;
@@ -283,26 +317,12 @@ $("inbound-btn").onclick = async () => {
   setTimeout(() => $("inbound-status").textContent = "", 3000);
 };
 
-$("call-btn").onclick = async () => {
+$("call-btn").onclick = () => {
   const to = $("call-to").value.trim();
   const facility = $("call-facility").value.trim();
   if (!to.startsWith("+")) return alert("Number must be E.164, e.g. +16505551234");
   if (!facility) return alert("Enter a facility name (used for logging + the agent's script)");
-  $("call-btn").disabled = true;
-  $("call-status").textContent = "dialing…";
-  try {
-    const res = await fetch("/api/calls/start", {method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({to_number: to, facility_name: facility,
-                            negotiate: $("call-negotiate").checked})});
-    const data = await res.json();
-    $("call-status").textContent = res.ok
-      ? `ringing — ${data.conversation_id}` : `error: ${data.detail}`;
-  } catch (e) {
-    $("call-status").textContent = "error: " + e;
-  } finally {
-    $("call-btn").disabled = false;
-  }
+  startCall(to, facility, $("call-negotiate").checked);
 };
 
 function stamp(flag) {
