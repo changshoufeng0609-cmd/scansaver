@@ -70,12 +70,29 @@ def _run(spec_id: str):
              "AUTOPILOT_PHONE_OVERRIDE) — nothing to dial")
         return
     try:
-        for cp in market:
+        phones = [_phone(cp) for cp in market]
+        parallel = len(set(phones)) == len(phones)  # duplicate targets → sequential
+
+        def _one(cp):
             _log(f"round 1 — calling {cp['facility_name']}…")
             out = calls.start_call(_phone(cp), cp["facility_name"],
                                    negotiate=False, spec_id=spec_id)
             _log(f"{cp['facility_name']}: {_wait_done(out['conversation_id'])}")
-            time.sleep(3)
+
+        if parallel:
+            _log(f"dialing all {len(market)} facilities in parallel")
+            threads = [threading.Thread(target=_one, args=(cp,), daemon=True)
+                       for cp in market]
+            for t in threads:
+                t.start()
+                time.sleep(1.5)  # stagger initiation slightly
+            for t in threads:
+                t.join(timeout=480)
+        else:
+            _log("shared phone target detected — calling sequentially")
+            for cp in market:
+                _one(cp)
+                time.sleep(3)
 
         ranked = [q for q in rank_quotes(spec_id)["ranked"] if q["total"]]
         if len(ranked) < 2:
