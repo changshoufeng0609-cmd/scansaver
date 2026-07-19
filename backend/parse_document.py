@@ -34,16 +34,19 @@ def parse_document(file_bytes: bytes, filename: str, config: dict) -> dict:
     block_type, media_type = MEDIA_TYPES[ext]
 
     schema = json.dumps(config["job_spec_schema"], indent=2)
+    kinds = config.get("document_examples", "any document related to this vertical")
     system = (
         "You extract structured job specifications from uploaded documents "
         f"for the vertical: {config['display_name']}.\n"
+        f"Usable documents include: {kinds}. Accept ANY document of that kind "
+        "and extract whatever spec fields it supports, even partially.\n"
         "Return ONLY a JSON object conforming to this schema — no prose, no "
         "markdown fences. Omit any field the document does not support; NEVER "
         "guess or invent values.\n"
-        "If the document is NOT relevant to this vertical (wrong kind of "
-        "document, unrelated photo, unreadable), do not extract anything — "
-        'return exactly {"irrelevant": "<one short sentence saying what the '
-        'document appears to be>"} instead.\n\nSchema:\n' + schema
+        "Only if the document is clearly UNRELATED to this vertical (wrong "
+        "domain entirely, random photo, unreadable) return exactly "
+        '{"irrelevant": "<one short sentence saying what the document appears '
+        'to be>"} instead.\n\nSchema:\n' + schema
     )
 
     data_url = f"data:{media_type};base64," + base64.b64encode(file_bytes).decode()

@@ -438,5 +438,6 @@
       "facility_name": "Premier Diagnostic Imaging",
       "phone": ""
     }
-  ]
+  ],
+  "document_examples": "doctor's order, referral, prescription, imaging report, old medical bill, insurance statement/EOB, discharge summary — any healthcare document that mentions the study or patient"
 }
