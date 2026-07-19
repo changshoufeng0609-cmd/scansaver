@@ -123,6 +123,8 @@
         <input type="checkbox" id="autopilot-toggle"/> Autopilot
       </label>
       <strong>The market</strong>
+      <button id="run-market-btn" style="margin-left:14px;padding:6px 16px">
+        ▶ Run market round</button>
       <div id="autopilot-log" class="mono" style="display:none;font-size:12.5px;
         margin-top:8px;color:var(--accent)"></div>
       <ul class="ledger" id="market-rows" style="margin-top:10px"></ul>
@@ -281,7 +283,7 @@ async function pollAutopilot() {
   try {
     const d = await (await fetch("/api/autopilot")).json();
     $("autopilot-toggle").checked = d.enabled;
-    const show = d.enabled && (d.running || d.log.length);
+    const show = d.running || d.log.length > 0;
     $("autopilot-log").style.display = show ? "block" : "none";
     if (show) $("autopilot-log").innerHTML =
       d.log.map(l => `<div>${l}</div>`).join("") +
@@ -289,6 +291,17 @@ async function pollAutopilot() {
   } catch (e) { /* backend restarting */ }
 }
 setInterval(pollAutopilot, 4000);
+
+$("run-market-btn").onclick = async () => {
+  if (!confirm("Auto-call every facility in the market (then negotiate)?")) return;
+  $("run-market-btn").disabled = true;
+  const res = await fetch("/api/autopilot/run", {method: "POST"});
+  const d = await res.json();
+  $("call-status").textContent = res.ok
+    ? `market round started (spec ${d.spec_id})` : `error: ${d.detail}`;
+  $("autopilot-log").style.display = "block";
+  setTimeout(() => $("run-market-btn").disabled = false, 5000);
+};
 
 $("autopilot-toggle").onchange = async () => {
   await fetch("/api/autopilot", {method: "POST",

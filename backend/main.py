@@ -215,6 +215,19 @@ async def set_autopilot(request: Request):
     return {"enabled": autopilot.STATE["enabled"]}
 
 
+@app.post("/api/autopilot/run")
+def run_autopilot_now():
+    """One-button market round: call every configured facility with the latest
+    confirmed spec, then the negotiation round. Same engine the phone-intake
+    trigger uses."""
+    latest = db.latest_spec(confirmed_only=True)
+    if not latest:
+        raise HTTPException(400, "No confirmed spec — do intake (voice/document) first")
+    if not autopilot.kick_off(latest["id"]):
+        raise HTTPException(409, "Autopilot is already running")
+    return {"ok": True, "spec_id": latest["id"]}
+
+
 # ---------- inbound agent switch (who answers our number) ----------
 
 @app.get("/api/inbound")
