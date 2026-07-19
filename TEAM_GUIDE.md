@@ -28,8 +28,8 @@
 
 ## How to drive it
 
-Dashboard: http://localhost:8000 (or from anywhere:
-https://enlisted-edition-graveness.ngrok-free.dev)
+Dashboard: http://localhost:8000 on the host laptop (there's also a public
+tunnel URL — ask Shou-Feng for it; not published here on purpose).
 
 1. **01 · Intake** — talk to the Estimator widget (in English), or upload a
    doctor's order photo. You can also just call **+1 605 566 4795** — the

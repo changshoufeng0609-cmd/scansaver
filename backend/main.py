@@ -317,6 +317,21 @@ def api_report(spec_id: str | None = None):
     return report.generate_report(sid)
 
 
+@app.get("/api/calls/{conversation_id}/live")
+def call_live(conversation_id: str):
+    """Near-real-time transcript: proxy the ElevenLabs conversation object so
+    the dashboard can render turns while the call is still running."""
+    d = elevenlabs_client.get_conversation(conversation_id)
+    return {
+        "status": d.get("status"),
+        "duration": (d.get("metadata") or {}).get("call_duration_secs"),
+        "turns": [
+            {"role": t.get("role"), "message": t.get("message")}
+            for t in (d.get("transcript") or []) if t.get("message")
+        ],
+    }
+
+
 @app.get("/api/calls/{conversation_id}/audio")
 def call_audio(conversation_id: str):
     dest = ROOT / "data" / "audio" / f"{conversation_id}.mp3"
