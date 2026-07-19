@@ -1,5 +1,7 @@
 # ScanSaver — The Negotiator for medical imaging
 
+## Full Video Drive Link: https://drive.google.com/file/d/1o8rt4lEMDfvs8hMQe9Caji4QGlYFnEoc/view?usp=sharing
+
 An MRI in the same city runs anywhere from $400 to $4,000 for the same scan on
 the same machine. ScanSaver interviews you once, phones the imaging centers,
 extracts real itemized cash prices, negotiates using your best competing quote,
