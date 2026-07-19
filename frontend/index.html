@@ -241,7 +241,12 @@ async function loadConfig() {
 
 async function loadLatest() {
   const data = await (await fetch("/api/specs/latest")).json();
-  if (!data.spec) { $("spec-status").textContent = "no spec yet"; return; }
+  if (!data.spec) {
+    specId = null;
+    if (document.activeElement !== $("spec-json")) $("spec-json").value = "";
+    $("spec-status").textContent = "no spec yet";
+    return;
+  }
   const changed = data.id !== specId;
   specId = data.id;
   // don't clobber the textarea while the user is editing it
