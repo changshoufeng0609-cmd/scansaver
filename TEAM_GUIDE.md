@@ -25,11 +25,17 @@
   yours once, the calls are in English.
 - **Touching code?** Clone the repo, open a PR. Secrets (`.env`) are not in
   git — ask Shou-Feng.
+- **⚠️ NEVER run `python -m scripts.setup_agents` from your machine.** It
+  deletes and recreates every agent in the SHARED ElevenLabs workspace and
+  bakes YOUR ngrok URL into the tool callbacks — which silently breaks the
+  live system (this happened; it took a while to diagnose). Prompt/config
+  changes go through a PR; Shou-Feng applies them with
+  `python -m scripts.update_prompts` (updates in place, breaks nothing).
 
 ## How to drive it
 
-Dashboard: http://localhost:8000. Remote access is available only when the host
-chooses to run a public tunnel or deployment.
+Dashboard: http://localhost:8000 on the host laptop (there's also a public
+tunnel URL — ask Shou-Feng for it; not published here on purpose).
 
 1. **01 · Intake** — talk to the Estimator widget (in English), or upload a
    doctor's order photo. You can also just call **+1 605 566 4795** — the

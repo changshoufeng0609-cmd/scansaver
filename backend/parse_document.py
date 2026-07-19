@@ -39,7 +39,11 @@ def parse_document(file_bytes: bytes, filename: str, config: dict) -> dict:
         f"for the vertical: {config['display_name']}.\n"
         "Return ONLY a JSON object conforming to this schema — no prose, no "
         "markdown fences. Omit any field the document does not support; NEVER "
-        "guess or invent values.\n\nSchema:\n" + schema
+        "guess or invent values.\n"
+        "If the document is NOT relevant to this vertical (wrong kind of "
+        "document, unrelated photo, unreadable), do not extract anything — "
+        'return exactly {"irrelevant": "<one short sentence saying what the '
+        'document appears to be>"} instead.\n\nSchema:\n' + schema
     )
 
     data_url = f"data:{media_type};base64," + base64.b64encode(file_bytes).decode()

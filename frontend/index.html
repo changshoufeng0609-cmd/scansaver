@@ -118,21 +118,33 @@
     <p class="hint">Dial a facility below (or via <span class="mono">python -m
       scripts.start_call</span>); quotes appear as the Caller logs them mid-call.</p>
     <div class="card" style="margin-bottom:16px">
-      <strong>Start a call</strong>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-        <input type="tel" id="call-to" placeholder="+16505551234"
-          style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
-                 border:1px solid var(--line);border-radius:8px;width:180px" />
-        <input type="text" id="call-facility" list="facility-list"
-          placeholder="Facility name" style="font-size:14px;padding:9px 12px;
-                 border:1px solid var(--line);border-radius:8px;width:230px" />
-        <datalist id="facility-list"></datalist>
-        <label style="font-size:14px;display:flex;gap:6px;align-items:center">
-          <input type="checkbox" id="call-negotiate" /> negotiate (round 2)
-        </label>
-        <button id="call-btn">Call</button>
-        <span id="call-status" class="mono" style="font-size:13px"></span>
-      </div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:700;
+        float:right;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="autopilot-toggle"/> Autopilot
+      </label>
+      <strong>The market</strong>
+      <button id="run-market-btn" style="margin-left:14px;padding:6px 16px">
+        ▶ Run market round</button>
+      <div id="autopilot-log" class="mono" style="display:none;font-size:12.5px;
+        margin-top:8px;color:var(--accent)"></div>
+      <ul class="ledger" id="market-rows" style="margin-top:10px"></ul>
+      <details style="margin-top:8px">
+        <summary class="hint" style="cursor:pointer">Call another number…</summary>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+          <input type="tel" id="call-to" placeholder="+16505551234"
+            style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
+                   border:1px solid var(--line);border-radius:8px;width:180px" />
+          <input type="text" id="call-facility" list="facility-list"
+            placeholder="Facility name" style="font-size:14px;padding:9px 12px;
+                   border:1px solid var(--line);border-radius:8px;width:230px" />
+          <datalist id="facility-list"></datalist>
+          <label style="font-size:14px;display:flex;gap:6px;align-items:center">
+            <input type="checkbox" id="call-negotiate" /> negotiate (round 2)
+          </label>
+          <button id="call-btn">Call</button>
+        </div>
+      </details>
+      <div style="margin-top:6px"><span id="call-status" class="mono" style="font-size:13px"></span></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13.5px">
         <span class="mono" id="inbound-number" style="color:var(--muted)">inbound —</span>
         <span>answered by</span>
@@ -142,6 +154,8 @@
         <span id="inbound-status" class="mono" style="font-size:12px;color:var(--accent)"></span>
       </div>
       <div id="calls-list" class="mono" style="font-size:12.5px;margin-top:10px;color:var(--muted)"></div>
+      <div id="live-transcript" style="display:none;margin-top:10px;max-height:260px;
+        overflow-y:auto;border-top:1px solid var(--line);padding-top:10px;font-size:13.5px"></div>
     </div>
     <div id="benchmark-band" class="mono" style="font-size:13px;color:var(--muted);margin:0 0 10px"></div>
     <div class="row" id="quotes"></div>
@@ -170,10 +184,40 @@ let lineItemLabels = {};
 const fmt = (n) => "$" + Number(n).toLocaleString("en-US",
   {maximumFractionDigits: 0});
 
+async function startCall(to, facility, negotiate) {
+  $("call-status").textContent = `dialing ${facility}…`;
+  try {
+    const res = await fetch("/api/calls/start", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({to_number: to, facility_name: facility, negotiate})});
+    const data = await res.json();
+    $("call-status").textContent = res.ok
+      ? `ringing ${facility} — ${data.conversation_id}` : `error: ${data.detail}`;
+  } catch (e) { $("call-status").textContent = "error: " + e; }
+}
+
+function renderMarket(market) {
+  $("market-rows").innerHTML = (market || []).map((cp, i) => {
+    const phone = cp.phone || "";
+    return `<li style="padding:6px 0">
+      <span><strong>${cp.facility_name}</strong></span>
+      <span class="dots"></span>
+      <span style="color:var(--muted)">${phone || "no number set"}</span>
+      <button style="padding:4px 12px;font-size:13px;margin-left:10px"
+        ${phone ? "" : "disabled"}
+        onclick="startCall('${phone}','${cp.facility_name}',false)">Call</button>
+      <button class="secondary" style="padding:4px 12px;font-size:13px;margin-left:4px"
+        ${phone ? "" : "disabled"}
+        onclick="startCall('${phone}','${cp.facility_name}',true)">Negotiate</button>
+    </li>`;
+  }).join("");
+}
+
 async function loadConfig() {
   const cfg = await (await fetch("/api/config")).json();
   $("vertical-pill").textContent = cfg.display_name;
   cfg.quote_line_items.forEach(li => lineItemLabels[li.id] = li.label);
+  renderMarket(cfg.counterparty_market);
   $("facility-list").innerHTML = (cfg.counterparty_market || [])
     .map(cp => `<option value="${cp.facility_name}"></option>`).join("");
   const estId = cfg.agent_ids && cfg.agent_ids.estimator;
@@ -197,11 +241,15 @@ async function loadConfig() {
 async function loadLatest() {
   const data = await (await fetch("/api/specs/latest")).json();
   if (!data.spec) { $("spec-status").textContent = "no spec yet"; return; }
+  const changed = data.id !== specId;
   specId = data.id;
-  $("spec-json").value = JSON.stringify(data.spec, null, 2);
+  // don't clobber the textarea while the user is editing it
+  if (changed || document.activeElement !== $("spec-json"))
+    $("spec-json").value = JSON.stringify(data.spec, null, 2);
   $("spec-status").textContent =
-    `spec ${specId} ${data.confirmed ? "· confirmed" : "· draft"}`;
+    `spec ${specId} ${data.confirmed ? "· confirmed ✓ (auto)" : "· draft — confirm below"}`;
 }
+setInterval(loadLatest, 4000);
 
 $("load-latest-btn").onclick = loadLatest;
 
@@ -210,8 +258,9 @@ $("parse-btn").onclick = async () => {
   if (!f) return alert("Choose a file first");
   $("spec-status").textContent = "parsing…";
   const fd = new FormData(); fd.append("file", f);
-  const res = await (await fetch("/api/parse-document",
-    {method: "POST", body: fd})).json();
+  const r = await fetch("/api/parse-document", {method: "POST", body: fd});
+  const res = await r.json();
+  if (!r.ok) { $("spec-status").textContent = `✗ ${res.detail}`; return; }
   specId = res.spec_id;
   $("spec-json").value = JSON.stringify(res.spec, null, 2);
   $("spec-status").textContent = `spec ${specId} · draft (from document)`;
@@ -235,6 +284,40 @@ $("confirm-btn").onclick = async () => {
   $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
 };
 
+let apWasRunning = false;
+async function pollAutopilot() {
+  try {
+    const d = await (await fetch("/api/autopilot")).json();
+    $("autopilot-toggle").checked = d.enabled;
+    const show = d.running || d.log.length > 0;
+    $("autopilot-log").style.display = show ? "block" : "none";
+    if (show) $("autopilot-log").innerHTML =
+      d.log.map(l => `<div>${l}</div>`).join("") +
+      (d.running ? '<div>⏳ running…</div>' : "");
+    if (apWasRunning && !d.running) $("report-btn").click();  // zero-click finish
+    apWasRunning = d.running;
+  } catch (e) { /* backend restarting */ }
+}
+setInterval(pollAutopilot, 4000);
+
+$("run-market-btn").onclick = async () => {
+  if (!confirm("Auto-call every facility in the market (then negotiate)?")) return;
+  $("run-market-btn").disabled = true;
+  const res = await fetch("/api/autopilot/run", {method: "POST"});
+  const d = await res.json();
+  $("call-status").textContent = res.ok
+    ? `market round started (spec ${d.spec_id})` : `error: ${d.detail}`;
+  $("autopilot-log").style.display = "block";
+  setTimeout(() => $("run-market-btn").disabled = false, 5000);
+};
+
+$("autopilot-toggle").onchange = async () => {
+  await fetch("/api/autopilot", {method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({enabled: $("autopilot-toggle").checked})});
+  pollAutopilot();
+};
+
 async function loadInbound() {
   try {
     const d = await (await fetch("/api/inbound")).json();
@@ -255,26 +338,12 @@ $("inbound-btn").onclick = async () => {
   setTimeout(() => $("inbound-status").textContent = "", 3000);
 };
 
-$("call-btn").onclick = async () => {
+$("call-btn").onclick = () => {
   const to = $("call-to").value.trim();
   const facility = $("call-facility").value.trim();
   if (!to.startsWith("+")) return alert("Number must be E.164, e.g. +16505551234");
   if (!facility) return alert("Enter a facility name (used for logging + the agent's script)");
-  $("call-btn").disabled = true;
-  $("call-status").textContent = "dialing…";
-  try {
-    const res = await fetch("/api/calls/start", {method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({to_number: to, facility_name: facility,
-                            negotiate: $("call-negotiate").checked})});
-    const data = await res.json();
-    $("call-status").textContent = res.ok
-      ? `ringing — ${data.conversation_id}` : `error: ${data.detail}`;
-  } catch (e) {
-    $("call-status").textContent = "error: " + e;
-  } finally {
-    $("call-btn").disabled = false;
-  }
+  startCall(to, facility, $("call-negotiate").checked);
 };
 
 function stamp(flag) {
@@ -322,14 +391,40 @@ function renderBenchmark(b) {
     : "";
 }
 
+let liveCid = null;
 function renderCalls(calls) {
   $("calls-list").innerHTML = (calls || []).map(c => {
     const s = c.status || "…";
     const color = s.startsWith("failed") ? "var(--flag)"
       : s.startsWith("done") ? "var(--accent)" : "var(--warn)";
     return `<div>☎ ${c.facility_name || "?"} — <span style="color:${color}">${s}</span>` +
-      `${c.negotiation_mode ? " · negotiation" : ""}</div>`;
+      `${c.negotiation_mode ? " · negotiation" : ""}
+       <a href="#" style="font-size:12px" onclick="toggleLive('${c.conversation_id}');return false">
+         ${liveCid === c.conversation_id ? "hide transcript" : "live transcript"}</a></div>`;
   }).join("");
+}
+
+async function toggleLive(cid) {
+  liveCid = liveCid === cid ? null : cid;
+  $("live-transcript").style.display = liveCid ? "block" : "none";
+  if (liveCid) pollLive();
+}
+
+async function pollLive() {
+  if (!liveCid) return;
+  try {
+    const d = await (await fetch(`/api/calls/${liveCid}/live`)).json();
+    $("live-transcript").innerHTML =
+      `<div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        ${liveCid} — ${d.status}${d.duration ? ` (${d.duration}s)` : ""}</div>` +
+      d.turns.map(t =>
+        `<div style="margin:3px 0"><strong style="color:${
+          t.role === "agent" ? "var(--accent)" : "var(--ink)"}">${
+          t.role === "agent" ? "Caller" : "Receptionist"}:</strong> ${t.message}</div>`
+      ).join("");
+    $("live-transcript").scrollTop = $("live-transcript").scrollHeight;
+    if (d.status !== "done" && d.status !== "failed") setTimeout(pollLive, 3000);
+  } catch (e) { setTimeout(pollLive, 5000); }
 }
 
 function renderOutcomes(outcomes) {
