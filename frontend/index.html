@@ -118,7 +118,13 @@
     <p class="hint">Dial a facility below (or via <span class="mono">python -m
       scripts.start_call</span>); quotes appear as the Caller logs them mid-call.</p>
     <div class="card" style="margin-bottom:16px">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:700;
+        float:right;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="autopilot-toggle"/> Autopilot
+      </label>
       <strong>Start a call</strong>
+      <div id="autopilot-log" class="mono" style="display:none;font-size:12.5px;
+        margin-top:8px;color:var(--accent)"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
         <input type="tel" id="call-to" placeholder="+16505551234"
           style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
@@ -235,6 +241,26 @@ $("confirm-btn").onclick = async () => {
   }
   await fetch(`/api/specs/${specId}/confirm`, {method: "POST"});
   $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
+};
+
+async function pollAutopilot() {
+  try {
+    const d = await (await fetch("/api/autopilot")).json();
+    $("autopilot-toggle").checked = d.enabled;
+    const show = d.enabled && (d.running || d.log.length);
+    $("autopilot-log").style.display = show ? "block" : "none";
+    if (show) $("autopilot-log").innerHTML =
+      d.log.map(l => `<div>${l}</div>`).join("") +
+      (d.running ? '<div>⏳ running…</div>' : "");
+  } catch (e) { /* backend restarting */ }
+}
+setInterval(pollAutopilot, 4000);
+
+$("autopilot-toggle").onchange = async () => {
+  await fetch("/api/autopilot", {method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({enabled: $("autopilot-toggle").checked})});
+  pollAutopilot();
 };
 
 async function loadInbound() {

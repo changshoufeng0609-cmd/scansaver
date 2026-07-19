@@ -424,15 +424,19 @@
   "counterparty_market": [
     {
       "agent_key": "stonewaller",
-      "facility_name": "Summit Imaging Center"
+      "facility_name": "Summit Imaging Center",
+      "phone": "",
+      "_phone_note": "Fill phone (+1...) per facility for autopilot dialing, or set AUTOPILOT_PHONE_OVERRIDE in .env to route all calls to one rehearsal number. Empty = skipped."
     },
     {
       "agent_key": "lowballer",
-      "facility_name": "ValueScan Radiology"
+      "facility_name": "ValueScan Radiology",
+      "phone": ""
     },
     {
       "agent_key": "upseller",
-      "facility_name": "Premier Diagnostic Imaging"
+      "facility_name": "Premier Diagnostic Imaging",
+      "phone": ""
     }
   ]
 }

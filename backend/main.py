@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 load_dotenv()
 
-from . import calls, db, elevenlabs_client, redflags, report  # noqa: E402
+from . import autopilot, calls, db, elevenlabs_client, redflags, report  # noqa: E402
 from .parse_document import parse_document  # noqa: E402
 from .spec_utils import get_benchmark, load_config  # noqa: E402
 
@@ -111,10 +111,19 @@ async def api_parse_document(file: UploadFile):
 
 @app.post("/tools/submit_spec")
 async def tool_submit_spec(request: Request):
-    """Estimator agent submits the verbally-confirmed spec at interview end."""
+    """Estimator agent submits the verbally-confirmed spec at interview end.
+    With autopilot on, the verbal confirmation counts as THE confirmation:
+    the spec is confirmed and the market round starts immediately."""
     body = await request.json()
     config = load_config()
     spec = body.get("spec") or body  # tolerate flat payloads from the LLM
+    if autopilot.STATE["enabled"]:
+        spec_id = db.create_spec(spec, config["vertical"], confirmed=True)
+        autopilot.kick_off(spec_id)
+        return {"spec_id": spec_id,
+                "message": ("Spec confirmed. Tell the user we're starting to "
+                            "call the imaging centers right now and they can "
+                            "hang up — results will be on the dashboard.")}
     spec_id = db.create_spec(spec, config["vertical"], confirmed=False)
     return {"spec_id": spec_id,
             "message": "Spec saved. Ask the user to confirm it on screen."}
@@ -186,6 +195,20 @@ async def api_start_call(request: Request):
     except ValueError as e:
         raise HTTPException(400, str(e))
     return {"conversation_id": out["conversation_id"], "spec_id": out["spec_id"]}
+
+
+# ---------- autopilot ----------
+
+@app.get("/api/autopilot")
+def get_autopilot():
+    return autopilot.STATE
+
+
+@app.post("/api/autopilot")
+async def set_autopilot(request: Request):
+    body = await request.json()
+    autopilot.STATE["enabled"] = bool(body.get("enabled"))
+    return {"enabled": autopilot.STATE["enabled"]}
 
 
 # ---------- inbound agent switch (who answers our number) ----------
