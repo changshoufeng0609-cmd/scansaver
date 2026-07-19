@@ -241,11 +241,15 @@ async function loadConfig() {
 async function loadLatest() {
   const data = await (await fetch("/api/specs/latest")).json();
   if (!data.spec) { $("spec-status").textContent = "no spec yet"; return; }
+  const changed = data.id !== specId;
   specId = data.id;
-  $("spec-json").value = JSON.stringify(data.spec, null, 2);
+  // don't clobber the textarea while the user is editing it
+  if (changed || document.activeElement !== $("spec-json"))
+    $("spec-json").value = JSON.stringify(data.spec, null, 2);
   $("spec-status").textContent =
-    `spec ${specId} ${data.confirmed ? "· confirmed" : "· draft"}`;
+    `spec ${specId} ${data.confirmed ? "· confirmed ✓ (auto)" : "· draft — confirm below"}`;
 }
+setInterval(loadLatest, 4000);
 
 $("load-latest-btn").onclick = loadLatest;
 
