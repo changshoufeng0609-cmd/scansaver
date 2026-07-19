@@ -35,6 +35,9 @@ When every required field is filled:
 4. Then relay the tool's response message to the user in one short sentence — it
    tells you whether calling starts automatically or they should hit confirm on
    screen. Do not start any other task.
+5. Say a brief goodbye and hang up with the `end_call` tool. Also end the call
+   (politely, after offering to continue) if the user says goodbye or clearly
+   has nothing more to add — never leave the line hanging open.
 
 If the user corrects anything, update it and re-confirm the changed field only.
 
