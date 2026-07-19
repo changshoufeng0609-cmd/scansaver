@@ -5,473 +5,179 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ScanSaver — never overpay for a scan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
-<style>
-  :root{
-    --bg:#F1F4F3; --surface:#FFFFFF; --ink:#16262B; --muted:#5C6E6B;
-    --accent:#0E6E62; --flag:#B3382F; --warn:#A16B00; --line:#D8E0DE;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:16px/1.55 "Archivo",system-ui,sans-serif;}
-  .mono{font-family:"IBM Plex Mono",monospace}
-  header{display:flex;justify-content:space-between;align-items:baseline;
-    padding:20px 28px;border-bottom:1.5px solid var(--ink)}
-  .wordmark{font-weight:800;font-size:22px;letter-spacing:-.02em}
-  .wordmark span{color:var(--accent)}
-  #vertical-pill{font-size:12px;color:var(--muted)}
-  main{max-width:980px;margin:0 auto;padding:8px 24px 80px}
-  section{margin-top:44px}
-  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;
-    letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
-  h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:4px 0 6px}
-  .hint{color:var(--muted);font-size:14px;max-width:640px;margin:0 0 16px}
-  .card{background:var(--surface);border:1px solid var(--line);
-    border-radius:10px;padding:18px 20px}
-  .row{display:flex;gap:16px;flex-wrap:wrap}
-  .row>.card{flex:1 1 300px}
-  button{font:inherit;font-weight:700;border:1.5px solid var(--ink);
-    background:var(--ink);color:#fff;border-radius:8px;padding:9px 16px;
-    cursor:pointer}
-  button.secondary{background:transparent;color:var(--ink)}
-  button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-  textarea{width:100%;min-height:180px;font-family:"IBM Plex Mono",monospace;
-    font-size:13px;border:1px solid var(--line);border-radius:8px;padding:12px;
-    background:#FBFDFC}
-  /* signature: ledger + stamps */
-  .ledger{list-style:none;margin:12px 0;padding:0}
-  .ledger li{display:flex;align-items:baseline;gap:8px;
-    font-family:"IBM Plex Mono",monospace;font-size:13.5px;padding:3px 0}
-  .ledger .dots{flex:1;border-bottom:1.5px dotted var(--line);
-    transform:translateY(-4px)}
-  .total{display:flex;justify-content:space-between;border-top:1.5px solid var(--ink);
-    margin-top:8px;padding-top:8px;font-family:"IBM Plex Mono",monospace;
-    font-weight:600;font-size:17px}
-  .stamp{display:inline-block;font-family:"IBM Plex Mono",monospace;
-    font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-    border:1.5px solid var(--flag);color:var(--flag);border-radius:4px;
-    padding:2px 7px;margin:8px 6px 0 0;transform:rotate(-1.4deg)}
-  .stamp.low{border-color:var(--warn);color:var(--warn);transform:rotate(1deg)}
-  .stamp.ok{border-color:var(--accent);color:var(--accent);transform:none}
-  .facility{font-weight:800;font-size:17px}
-  .moved{color:var(--accent);font-size:13px;font-weight:700}
-  .prev-total{color:var(--muted);text-decoration:line-through;
-    font-family:"IBM Plex Mono",monospace;font-size:13px}
-  .quote-card{animation:in .35s ease}
-  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
-  @media (prefers-reduced-motion: reduce){.quote-card{animation:none}}
-  pre#report-text{white-space:pre-wrap;font:inherit;margin:0}
-  audio{width:100%;margin-top:8px}
-  .empty{color:var(--muted);font-size:14px;font-style:italic}
-  input[type=file]{font-size:14px}
-  #spec-status{font-family:"IBM Plex Mono",monospace;font-size:13px;
-    color:var(--accent);margin-left:10px}
-</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23ef2cc1'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-<header>
-  <div class="wordmark">Scan<span>Saver</span> — The Negotiator</div>
-  <div id="vertical-pill">loading…</div>
+
+<header class="topbar">
+  <div class="wordmark">scan<span class="grad-text">saver</span></div>
+  <div id="vertical-pill" class="badge-dark mono-caps">loading…</div>
 </header>
+
+<!-- hero + voice module -->
+<section class="hero">
+  <div class="aura" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-badge mono-caps"><span class="grad-dot" aria-hidden="true"></span>the negotiator · voice intake</div>
+    <h1>Never overpay for a scan</h1>
+    <p class="hero-sub">Tell the estimator what you need once. It phones the market,
+      negotiates cash prices with real leverage, and hands you a ranked report.</p>
+
+    <div class="voice-module">
+      <div class="viz-wrap">
+        <canvas id="viz-canvas" width="360" height="360" aria-hidden="true"></canvas>
+        <button id="talk-btn" aria-label="Start or stop the voice interview">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+            <path d="M5 11a7 7 0 0 0 14 0"></path>
+            <line x1="12" y1="18" x2="12" y2="21"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="voice-status" class="mono-caps">tap to talk</div>
+      <div id="captions" aria-live="polite"></div>
+      <div id="widget-mount" hidden></div>
+      <div class="module-foot">
+        <input type="file" id="doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden />
+        <button id="add-doc-btn" class="btn btn-ghost">+ add a document</button>
+        <button id="parse-btn" class="btn btn-ghost" hidden>parse into spec</button>
+        <span class="module-note mono-caps">one voice or document → one spec</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <main>
 
-  <section>
-    <div class="eyebrow">01 · Intake</div>
-    <h2>Describe the job once</h2>
-    <p class="hint">Talk to the Estimator, or upload a doctor's order / old bill.
-      Both paths produce the same structured spec.</p>
-    <div class="row">
-      <div class="card">
-        <strong>Voice interview</strong>
-        <p class="hint">The Estimator asks what a scheduler would ask, then
-          submits the spec for your confirmation.</p>
-        <div id="widget-mount" class="empty">Estimator agent not provisioned yet
-          — run <span class="mono">python -m scripts.setup_agents</span>.</div>
-      </div>
-      <div class="card">
-        <strong>Upload a document</strong>
-        <p class="hint">Doctor's order, referral, or an old bill (PDF or photo).</p>
-        <input type="file" id="doc-file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
-        <div style="margin-top:10px"><button id="parse-btn">Parse into spec</button></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="eyebrow">02 · Confirm</div>
+  <!-- spec sheet -->
+  <section id="spec-section" class="section" hidden>
+    <div class="eyebrow mono-caps">01 · the spec</div>
     <h2>One spec, reused verbatim on every call</h2>
-    <p class="hint">Review and edit the JSON, then confirm. No calls happen
-      before this.</p>
-    <div class="card">
-      <textarea id="spec-json" placeholder='{"scan_type":"MRI","body_part":"right ankle", ...}'></textarea>
-      <div style="margin-top:10px">
-        <button id="confirm-btn">Confirm spec — ready to call</button>
-        <button class="secondary" id="load-latest-btn">Load latest spec</button>
-        <span id="spec-status"></span>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="eyebrow">03 · The calls</div>
-    <h2>Live quote ledger</h2>
-    <p class="hint">Dial a facility below (or via <span class="mono">python -m
-      scripts.start_call</span>); quotes appear as the Caller logs them mid-call.</p>
-    <div class="card" style="margin-bottom:16px">
-      <label style="display:flex;gap:8px;align-items:center;font-weight:700;
-        float:right;font-size:14px;cursor:pointer">
-        <input type="checkbox" id="autopilot-toggle"/> Autopilot
-      </label>
-      <strong>The market</strong>
-      <button id="run-market-btn" style="margin-left:14px;padding:6px 16px">
-        ▶ Run market round</button>
-      <div id="autopilot-log" class="mono" style="display:none;font-size:12.5px;
-        margin-top:8px;color:var(--accent)"></div>
-      <ul class="ledger" id="market-rows" style="margin-top:10px"></ul>
-      <details style="margin-top:8px">
-        <summary class="hint" style="cursor:pointer">Call another number…</summary>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-          <input type="tel" id="call-to" placeholder="+16505551234"
-            style="font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;
-                   border:1px solid var(--line);border-radius:8px;width:180px" />
-          <input type="text" id="call-facility" list="facility-list"
-            placeholder="Facility name" style="font-size:14px;padding:9px 12px;
-                   border:1px solid var(--line);border-radius:8px;width:230px" />
-          <datalist id="facility-list"></datalist>
-          <label style="font-size:14px;display:flex;gap:6px;align-items:center">
-            <input type="checkbox" id="call-negotiate" /> negotiate (round 2)
-          </label>
-          <button id="call-btn">Call</button>
+    <p class="hint">Captured from your voice interview or document — confirmed
+      automatically, editable below if anything looks off.</p>
+    <div class="card spec-card">
+      <div id="spec-sheet" class="spec-grid"></div>
+      <div class="spec-meta"><span id="spec-status" class="mono-caps"></span></div>
+      <details class="raw-json">
+        <summary class="mono-caps">raw json — edit for corrections</summary>
+        <textarea id="spec-json" spellcheck="false"
+          placeholder='{"scan_type":"MRI","body_part":"right ankle", ...}'></textarea>
+        <div class="btn-row">
+          <button id="confirm-btn" class="btn btn-mint">apply corrections</button>
+          <button id="load-latest-btn" class="btn btn-ghost">load latest spec</button>
         </div>
       </details>
-      <div style="margin-top:6px"><span id="call-status" class="mono" style="font-size:13px"></span></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13.5px">
-        <span class="mono" id="inbound-number" style="color:var(--muted)">inbound —</span>
-        <span>answered by</span>
-        <select id="inbound-agent" style="font:inherit;padding:4px 8px;
-          border:1px solid var(--line);border-radius:6px"></select>
-        <button class="secondary" id="inbound-btn" style="padding:5px 12px;font-size:13px">Switch</button>
-        <span id="inbound-status" class="mono" style="font-size:12px;color:var(--accent)"></span>
-      </div>
-      <div id="calls-list" class="mono" style="font-size:12.5px;margin-top:10px;color:var(--muted)"></div>
-      <div id="live-transcript" style="display:none;margin-top:10px;max-height:260px;
-        overflow-y:auto;border-top:1px solid var(--line);padding-top:10px;font-size:13.5px"></div>
-    </div>
-    <div id="benchmark-band" class="mono" style="font-size:13px;color:var(--muted);margin:0 0 10px"></div>
-    <div class="row" id="quotes"></div>
-    <div class="card" style="margin-top:16px">
-      <strong>Other structured outcomes</strong>
-      <div id="outcomes" class="empty" style="margin-top:6px">none yet</div>
     </div>
   </section>
 
-  <section>
-    <div class="eyebrow">04 · The close</div>
+  <!-- live market results -->
+  <section id="results-section" class="section" hidden>
+    <div class="eyebrow mono-caps">02 · the calls</div>
+    <h2>Live market results</h2>
+    <p class="hint">The caller dials every facility, survives the friction, and logs
+      itemized quotes mid-call. Everything below updates on its own.</p>
+
+    <div id="stats-row">
+      <div class="stat-tile">
+        <div class="stat-num" id="stat-calls">0</div>
+        <div class="stat-label mono-caps">calls placed</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-num" id="stat-quotes">0</div>
+        <div class="stat-label mono-caps">quotes received</div>
+      </div>
+      <div class="stat-tile tint-mint">
+        <div class="stat-num" id="stat-best">—</div>
+        <div class="stat-label mono-caps">best price so far</div>
+      </div>
+      <div class="stat-tile tint-peri">
+        <div class="stat-num" id="stat-median">—</div>
+        <div class="stat-label mono-caps">market median</div>
+      </div>
+    </div>
+    <div id="benchmark-band" class="mono-line"></div>
+
+    <div class="card calls-card">
+      <div class="card-title mono-caps">calls in progress</div>
+      <div id="calls-list"></div>
+      <div id="live-transcript" hidden></div>
+    </div>
+
+    <div id="quotes" class="quotes-grid"></div>
+
+    <div class="card outcomes-card">
+      <div class="card-title mono-caps">other structured outcomes</div>
+      <div id="outcomes" class="empty">none yet</div>
+    </div>
+
+    <details id="operator-drawer" class="card operator">
+      <summary class="mono-caps">operator controls</summary>
+      <div class="op-body">
+        <div class="op-row">
+          <button id="run-market-btn" class="btn btn-primary">▶ run market round</button>
+          <label class="op-check">
+            <input type="checkbox" id="autopilot-toggle" /> <span class="mono-caps">autopilot</span>
+          </label>
+        </div>
+        <div id="autopilot-log"></div>
+        <ul class="ledger" id="market-rows"></ul>
+        <div class="op-group">
+          <div class="op-group-title mono-caps">call another number</div>
+          <div class="op-row">
+            <input type="tel" id="call-to" class="input mono" placeholder="+16505551234" />
+            <input type="text" id="call-facility" class="input" list="facility-list"
+                   placeholder="Facility name" />
+            <datalist id="facility-list"></datalist>
+            <label class="op-check">
+              <input type="checkbox" id="call-negotiate" /> <span class="mono-caps">negotiate (round 2)</span>
+            </label>
+            <button id="call-btn" class="btn btn-primary">call</button>
+          </div>
+        </div>
+        <div id="call-status" class="mono-line"></div>
+        <div class="op-group">
+          <div class="op-group-title mono-caps">inbound line</div>
+          <div class="op-row">
+            <span id="inbound-number" class="mono-line">inbound —</span>
+            <span class="op-plain">answered by</span>
+            <select id="inbound-agent" class="input"></select>
+            <button id="inbound-btn" class="btn btn-ghost">switch</button>
+            <span id="inbound-status" class="mono-line ok"></span>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- report -->
+  <section id="report-section" class="section" hidden>
+    <div class="eyebrow mono-caps">03 · the close</div>
     <h2>Ranked recommendation with evidence</h2>
-    <div class="card">
-      <button id="report-btn">Generate report</button>
-      <div id="report" style="margin-top:14px" class="empty">not generated yet</div>
+    <p class="hint">Generated automatically once every call settles — cited against
+      the transcripts and recordings below.</p>
+    <div class="card report-card">
+      <div id="report" class="empty">waiting for the calls to finish…</div>
+      <div class="btn-row">
+        <button id="report-btn" class="btn btn-ghost">regenerate</button>
+      </div>
     </div>
   </section>
 
 </main>
 
-<script>
-const $ = (id) => document.getElementById(id);
-let specId = null;
-let lineItemLabels = {};
+<footer>
+  <div class="meta-row mono-caps">
+    <span>scansaver — the negotiator</span>
+    <span>medical imaging vertical · config-driven</span>
+    <span>honesty is a feature</span>
+  </div>
+  <div class="wordmark-banner" aria-hidden="true">scansaver</div>
+</footer>
 
-const fmt = (n) => "$" + Number(n).toLocaleString("en-US",
-  {maximumFractionDigits: 0});
-
-async function startCall(to, facility, negotiate) {
-  $("call-status").textContent = `dialing ${facility}…`;
-  try {
-    const res = await fetch("/api/calls/start", {method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({to_number: to, facility_name: facility, negotiate})});
-    const data = await res.json();
-    $("call-status").textContent = res.ok
-      ? `ringing ${facility} — ${data.conversation_id}` : `error: ${data.detail}`;
-  } catch (e) { $("call-status").textContent = "error: " + e; }
-}
-
-function renderMarket(market) {
-  $("market-rows").innerHTML = (market || []).map((cp, i) => {
-    const phone = cp.phone || "";
-    return `<li style="padding:6px 0">
-      <span><strong>${cp.facility_name}</strong></span>
-      <span class="dots"></span>
-      <span style="color:var(--muted)">${phone || "no number set"}</span>
-      <button style="padding:4px 12px;font-size:13px;margin-left:10px"
-        ${phone ? "" : "disabled"}
-        onclick="startCall('${phone}','${cp.facility_name}',false)">Call</button>
-      <button class="secondary" style="padding:4px 12px;font-size:13px;margin-left:4px"
-        ${phone ? "" : "disabled"}
-        onclick="startCall('${phone}','${cp.facility_name}',true)">Negotiate</button>
-    </li>`;
-  }).join("");
-}
-
-async function loadConfig() {
-  const cfg = await (await fetch("/api/config")).json();
-  $("vertical-pill").textContent = cfg.display_name;
-  cfg.quote_line_items.forEach(li => lineItemLabels[li.id] = li.label);
-  renderMarket(cfg.counterparty_market);
-  $("facility-list").innerHTML = (cfg.counterparty_market || [])
-    .map(cp => `<option value="${cp.facility_name}"></option>`).join("");
-  const estId = cfg.agent_ids && cfg.agent_ids.estimator;
-  if (estId) {
-    // ElevenLabs web widget embed — verified 2026-07-18 against
-    // /docs/eleven-agents/customization/widget: <elevenlabs-convai agent-id>
-    // + unpkg script. The agent must be public (Advanced tab → disable
-    // authentication), or swap this for the JS SDK with auth.
-    $("widget-mount").classList.remove("empty");
-    $("widget-mount").innerHTML = "";
-    const w = document.createElement("elevenlabs-convai");
-    w.setAttribute("agent-id", estId);
-    $("widget-mount").appendChild(w);
-    const s = document.createElement("script");
-    s.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
-    s.async = true;
-    document.body.appendChild(s);
-  }
-}
-
-async function loadLatest() {
-  const data = await (await fetch("/api/specs/latest")).json();
-  if (!data.spec) { $("spec-status").textContent = "no spec yet"; return; }
-  const changed = data.id !== specId;
-  specId = data.id;
-  // don't clobber the textarea while the user is editing it
-  if (changed || document.activeElement !== $("spec-json"))
-    $("spec-json").value = JSON.stringify(data.spec, null, 2);
-  $("spec-status").textContent =
-    `spec ${specId} ${data.confirmed ? "· confirmed ✓ (auto)" : "· draft — confirm below"}`;
-}
-setInterval(loadLatest, 4000);
-
-$("load-latest-btn").onclick = loadLatest;
-
-$("parse-btn").onclick = async () => {
-  const f = $("doc-file").files[0];
-  if (!f) return alert("Choose a file first");
-  $("spec-status").textContent = "parsing…";
-  const fd = new FormData(); fd.append("file", f);
-  const r = await fetch("/api/parse-document", {method: "POST", body: fd});
-  const res = await r.json();
-  if (!r.ok) { $("spec-status").textContent = `✗ ${res.detail}`; return; }
-  specId = res.spec_id;
-  $("spec-json").value = JSON.stringify(res.spec, null, 2);
-  $("spec-status").textContent = `spec ${specId} · draft (from document)`;
-};
-
-$("confirm-btn").onclick = async () => {
-  let spec;
-  try { spec = JSON.parse($("spec-json").value); }
-  catch { return alert("Spec is not valid JSON"); }
-  if (!specId) {
-    const res = await (await fetch("/api/specs", {method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({spec})})).json();
-    specId = res.spec_id;
-  } else {
-    await fetch(`/api/specs/${specId}`, {method: "PUT",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({spec})});
-  }
-  await fetch(`/api/specs/${specId}/confirm`, {method: "POST"});
-  $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
-};
-
-let apWasRunning = false;
-async function pollAutopilot() {
-  try {
-    const d = await (await fetch("/api/autopilot")).json();
-    $("autopilot-toggle").checked = d.enabled;
-    const show = d.running || d.log.length > 0;
-    $("autopilot-log").style.display = show ? "block" : "none";
-    if (show) $("autopilot-log").innerHTML =
-      d.log.map(l => `<div>${l}</div>`).join("") +
-      (d.running ? '<div>⏳ running…</div>' : "");
-    if (apWasRunning && !d.running) $("report-btn").click();  // zero-click finish
-    apWasRunning = d.running;
-  } catch (e) { /* backend restarting */ }
-}
-setInterval(pollAutopilot, 4000);
-
-$("run-market-btn").onclick = async () => {
-  if (!confirm("Auto-call every facility in the market (then negotiate)?")) return;
-  $("run-market-btn").disabled = true;
-  const res = await fetch("/api/autopilot/run", {method: "POST"});
-  const d = await res.json();
-  $("call-status").textContent = res.ok
-    ? `market round started (spec ${d.spec_id})` : `error: ${d.detail}`;
-  $("autopilot-log").style.display = "block";
-  setTimeout(() => $("run-market-btn").disabled = false, 5000);
-};
-
-$("autopilot-toggle").onchange = async () => {
-  await fetch("/api/autopilot", {method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({enabled: $("autopilot-toggle").checked})});
-  pollAutopilot();
-};
-
-async function loadInbound() {
-  try {
-    const d = await (await fetch("/api/inbound")).json();
-    if (!d.phone_number) return;
-    $("inbound-number").textContent = d.phone_number;
-    $("inbound-agent").innerHTML = d.agents.map(a =>
-      `<option value="${a}" ${a === d.assigned ? "selected" : ""}>${a}</option>`).join("");
-  } catch (e) { /* backend not ready */ }
-}
-
-$("inbound-btn").onclick = async () => {
-  $("inbound-status").textContent = "switching…";
-  const res = await fetch("/api/inbound", {method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({agent_key: $("inbound-agent").value})});
-  $("inbound-status").textContent = res.ok ? "switched ✓" :
-    "error: " + (await res.json()).detail;
-  setTimeout(() => $("inbound-status").textContent = "", 3000);
-};
-
-$("call-btn").onclick = () => {
-  const to = $("call-to").value.trim();
-  const facility = $("call-facility").value.trim();
-  if (!to.startsWith("+")) return alert("Number must be E.164, e.g. +16505551234");
-  if (!facility) return alert("Enter a facility name (used for logging + the agent's script)");
-  startCall(to, facility, $("call-negotiate").checked);
-};
-
-function stamp(flag) {
-  const cls = flag.severity === "high" ? "" : " low";
-  return `<span class="stamp${cls}" title="${flag.explanation || ""}">⚑ ${flag.label}</span>`;
-}
-
-function renderQuotes(quotes, benchmark) {
-  const byFac = {};
-  quotes.forEach(q => (byFac[q.facility_name] ||= []).push(q));
-  const cards = Object.entries(byFac).map(([fac, qs]) => {
-    const q = qs[qs.length - 1];
-    const moved = new Set(qs.map(x => x.total)).size > 1;
-    const prev = moved ? qs[qs.length - 2].total : null;
-    const items = (q.line_items || []).map(li =>
-      `<li><span>${li.label || lineItemLabels[li.id] || li.id}</span>` +
-      `<span class="dots"></span><span>${fmt(li.amount)}</span></li>`).join("");
-    const flags = (q.red_flags || []).map(stamp).join("") ||
-      `<span class="stamp ok">no red flags</span>`;
-    let vsMedian = "";
-    if (benchmark && benchmark.cash_median && q.total) {
-      const pct = Math.round(100 * (q.total - benchmark.cash_median) / benchmark.cash_median);
-      vsMedian = `<div class="hint" style="margin:4px 0 0">
-        ${pct >= 0 ? "+" : ""}${pct}% vs market median ${fmt(benchmark.cash_median)}</div>`;
-    }
-    return `<div class="card quote-card">
-      <div class="facility">${fac}</div>
-      ${moved ? `<div class="moved">▾ price moved during call
-        <span class="prev-total">${fmt(prev)}</span></div>` : ""}
-      <ul class="ledger">${items}</ul>
-      <div class="total"><span>${q.itemized ? "itemized total" : "stated total (not itemized)"}</span>
-        <span>${fmt(q.total)}</span></div>
-      ${vsMedian}
-      <div>${flags}</div>
-      ${q.notes ? `<p class="hint" style="margin:10px 0 0">${q.notes}</p>` : ""}
-    </div>`;
-  });
-  $("quotes").innerHTML = cards.join("") ||
-    `<div class="empty">no quotes logged yet</div>`;
-}
-
-function renderBenchmark(b) {
-  $("benchmark-band").textContent = b && b.cash_median
-    ? `market benchmark (${b.label || ""}): low ${fmt(b.cash_low)} · median ${fmt(b.cash_median)} · high ${fmt(b.cash_high)} · Medicare floor ${fmt(b.medicare_floor)}`
-    : "";
-}
-
-let liveCid = null;
-function renderCalls(calls) {
-  $("calls-list").innerHTML = (calls || []).map(c => {
-    const s = c.status || "…";
-    const color = s.startsWith("failed") ? "var(--flag)"
-      : s.startsWith("done") ? "var(--accent)" : "var(--warn)";
-    return `<div>☎ ${c.facility_name || "?"} — <span style="color:${color}">${s}</span>` +
-      `${c.negotiation_mode ? " · negotiation" : ""}
-       <a href="#" style="font-size:12px" onclick="toggleLive('${c.conversation_id}');return false">
-         ${liveCid === c.conversation_id ? "hide transcript" : "live transcript"}</a></div>`;
-  }).join("");
-}
-
-async function toggleLive(cid) {
-  liveCid = liveCid === cid ? null : cid;
-  $("live-transcript").style.display = liveCid ? "block" : "none";
-  if (liveCid) pollLive();
-}
-
-async function pollLive() {
-  if (!liveCid) return;
-  try {
-    const d = await (await fetch(`/api/calls/${liveCid}/live`)).json();
-    $("live-transcript").innerHTML =
-      `<div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:6px">
-        ${liveCid} — ${d.status}${d.duration ? ` (${d.duration}s)` : ""}</div>` +
-      d.turns.map(t =>
-        `<div style="margin:3px 0"><strong style="color:${
-          t.role === "agent" ? "var(--accent)" : "var(--ink)"}">${
-          t.role === "agent" ? "Caller" : "Receptionist"}:</strong> ${t.message}</div>`
-      ).join("");
-    $("live-transcript").scrollTop = $("live-transcript").scrollHeight;
-    if (d.status !== "done" && d.status !== "failed") setTimeout(pollLive, 3000);
-  } catch (e) { setTimeout(pollLive, 5000); }
-}
-
-function renderOutcomes(outcomes) {
-  if (!outcomes.length) return;
-  $("outcomes").classList.remove("empty");
-  $("outcomes").innerHTML = outcomes.map(o =>
-    `<div style="margin-bottom:6px"><strong>${o.facility_name}</strong> —
-     <span class="mono">${o.outcome_type}</span>: ${o.details || ""}
-     ${(o.red_flags || []).map(stamp).join("")}</div>`).join("");
-}
-
-async function poll() {
-  try {
-    const data = await (await fetch("/api/quotes")).json();
-    renderBenchmark(data.benchmark);
-    renderQuotes(data.quotes, data.benchmark);
-    renderOutcomes(data.outcomes);
-    renderCalls(data.calls);
-    window._calls = data.calls || [];
-  } catch (e) { /* no confirmed spec yet — fine */ }
-}
-setInterval(poll, 4000);
-
-$("report-btn").onclick = async () => {
-  $("report").textContent = "generating…";
-  const r = await (await fetch("/api/report")).json();
-  $("report").classList.remove("empty");
-  const rows = r.ranked.map((q, i) =>
-    `<li><strong>#${i + 1} ${q.facility_name}</strong> —
-     <span class="mono">${fmt(q.effective_total)}</span> effective
-     ${q.price_moved ? `<span class="moved">· price moved${
-       q.saved ? ` — saved ${fmt(q.saved)} (${q.saved_pct}%)` : ""}</span>` : ""}
-     ${(q.red_flags || []).map(stamp).join("")}
-     ${q.effective_note ? `<div class="hint">${q.effective_note}</div>` : ""}</li>`
-  ).join("");
-  const audio = (window._calls || []).filter(c => c.conversation_id).map(c =>
-    `<div><span class="mono" style="font-size:12px">${c.facility_name} —
-     ${c.conversation_id}${c.negotiation_mode ? " (negotiation)" : ""}</span>
-     <audio controls preload="none"
-       src="/api/calls/${c.conversation_id}/audio"></audio></div>`).join("");
-  $("report").innerHTML =
-    `<pre id="report-text">${r.recommendation}</pre>
-     <ol style="padding-left:20px">${rows}</ol>
-     <strong>Call recordings</strong>${audio || '<div class="empty">none stored yet</div>'}`;
-};
-
-loadConfig().then(loadLatest).then(poll).then(loadInbound);
-</script>
+<script type="module" src="/static/app.js"></script>
 </body>
 </html>
