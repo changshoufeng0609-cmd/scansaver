@@ -26,11 +26,25 @@ config sees where each number comes from.
 | CPT | Study | Medicare floor¹ | Cash low | Cash median | Cash high |
 |---|---|---:|---:|---:|---:|
 | 73721 | MRI lower-extremity joint (knee/ankle), no contrast | $230 | $385 | $625 | $1,550 |
+| 73722 | MRI lower-extremity joint, with contrast | $275² | $500 | $800 | $1,900 |
+| 73221 | MRI upper-extremity joint (shoulder), no contrast | $225² | $385 | $625 | $1,550 |
 | 72148 | MRI lumbar spine, no contrast | $205 | $350 | $800 | $2,800 |
+| 70551 | MRI brain, no contrast | $195 | $400 | $775 | $2,500 |
 | 70450 | CT head/brain, no contrast | $107 | $225 | $500 | $1,400 |
+| 74176 | CT abdomen/pelvis, no contrast | $205² | $300 | $700 | $2,200 |
+| 71046 | X-ray chest, 2 views | $33 | $40 | $110 | $350 |
 | 73610 | X-ray ankle, complete (3+ views) | $37 | $60 | $140 | $400 |
+| 76700 | Ultrasound abdomen, complete | $115² | $100 | $250 | $900 |
+| 77067 | Screening mammogram, bilateral | $135² | $150 | $250 | $700 |
+| 77080 | DEXA bone density, axial | $100² | $80 | $180 | $500 |
 
 ¹ National non-facility **global** rate (technical + professional component).
+² Rounded estimate from the same CY2026 schedule (not individually anchored —
+verify in the CMS lookup tool before quoting it as exact).
+
+Contrast variants without their own row resolve to the nearest same-scan,
+same-body-part entry (see `resolve_cpt` fallback in `backend/spec_utils.py`) —
+an approximate band beats none, and the label always names its variant.
 
 ## Sources & method
 
@@ -51,8 +65,13 @@ aggregators and published cash rates:
 - NewChoiceHealth, Palo Alto lower-extremity MRI: median **$614**, low **$440**,
   area MRI average $1,214 —
   https://www.newchoicehealth.com/places/california/palo-alto/mri/mri-foot-ankle-leg-hip-lower-extremity
-- Radiology Assist, Mountain View: self-pay MRI **from $385** —
+- Radiology Assist, Mountain View: self-pay MRI **from $385** (LA from $287) —
   https://radiologyassist.com/facility-locations-rates/locations-by-city/mri/mountain-view-ca-mri/
+- Per-code Medicare anchors: https://www.medfeeschedule.com/code/70551 ($195.40),
+  https://www.medfeeschedule.com/code/71046 ($33.07)
+- CA cash fee schedules for the added modalities: https://calrads.org/pricing/ ,
+  https://www.sdimaging.com/cash-fee-schedule/ , https://www.imaginghealthcare.com/pricing/ ,
+  plus GoodRx self-pay imaging ranges: https://www.goodrx.com/health-topic/diagnostics/self-pay-imaging
 - Sidecar Health cash-price browser (CA radiology):
   https://cost.sidecarhealth.com/browse/radiology-services-costs
 - KQED price-check reporting: the same back MRI ranged **$255–$3,700** across

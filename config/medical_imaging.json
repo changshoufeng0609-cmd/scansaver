@@ -177,10 +177,54 @@
     "X-ray|ankle|without": {
       "cpt": "73610",
       "label": "X-ray ankle, complete (3+ views)"
+    },
+    "MRI|brain|without": {
+      "cpt": "70551",
+      "label": "MRI brain w/o contrast"
+    },
+    "MRI|head|without": {
+      "cpt": "70551",
+      "label": "MRI brain w/o contrast"
+    },
+    "MRI|shoulder|without": {
+      "cpt": "73221",
+      "label": "MRI upper extremity joint w/o contrast"
+    },
+    "MRI|knee|with": {
+      "cpt": "73722",
+      "label": "MRI lower extremity joint w/ contrast"
+    },
+    "MRI|ankle|with": {
+      "cpt": "73722",
+      "label": "MRI lower extremity joint w/ contrast"
+    },
+    "CT|abdomen|without": {
+      "cpt": "74176",
+      "label": "CT abdomen/pelvis w/o contrast"
+    },
+    "X-ray|chest|without": {
+      "cpt": "71046",
+      "label": "X-ray chest, 2 views"
+    },
+    "Ultrasound|abdomen|without": {
+      "cpt": "76700",
+      "label": "Ultrasound abdomen, complete"
+    },
+    "Mammogram|breast|without": {
+      "cpt": "77067",
+      "label": "Screening mammogram, bilateral"
+    },
+    "DEXA|spine|without": {
+      "cpt": "77080",
+      "label": "DEXA bone density, axial"
+    },
+    "DEXA|hip|without": {
+      "cpt": "77080",
+      "label": "DEXA bone density, axial"
     }
   },
   "benchmarks": {
-    "_warning": "REAL DATA (updated 2026-07-18) for demo ZIP 94301 (Palo Alto, CA). medicare_floor = CMS Physician Fee Schedule CY2026 national non-facility global (conversion factor $33.40; cms.gov PFS lookup / payerprice.com). Cash ranges: newchoicehealth.com Palo Alto medians (lower-extremity MRI median $614, low $440; area MRI avg $1,214), radiologyassist.com Mountain View self-pay MRI from $385, cost.sidecarhealth.com CA radiology cash prices, KQED Bay Area back-MRI spread $255-$3,700. Hospital-affiliated (e.g. Stanford) sit at the high end; independent imaging centers at the low end.",
+    "_warning": "REAL DATA (updated 2026-07-18) for demo ZIP 94301 (Palo Alto, CA). medicare_floor = CMS Physician Fee Schedule CY2026 national non-facility global (CF $33.40); exact anchors from cms.gov PFS lookup / medfeeschedule.com per-code pages (73721 $229.50, 72148 $204.50, 70450 ~$107, 70551 $195.40, 71046 $33.07); remaining floors rounded from the same schedule (approx). Cash low/median/high: newchoicehealth.com Palo Alto (lower-extremity MRI median $614, low $440; area MRI avg $1,214), radiologyassist.com self-pay (Mountain View MRI from $385, LA from $287), CA cash fee schedules (calrads.org, sdimaging.com, imaginghealthcare.com), goodrx.com self-pay imaging ranges, cost.sidecarhealth.com, KQED Bay Area back-MRI spread $255-$3,700. Hospital-affiliated pricing sits at the high end; independent centers at the low end. See BENCHMARKS.md for method and links.",
     "by_cpt": {
       "73721": {
         "label": "MRI lower extremity joint w/o contrast",
@@ -209,6 +253,62 @@
         "cash_low": 60,
         "cash_median": 140,
         "cash_high": 400
+      },
+      "70551": {
+        "label": "MRI brain w/o contrast",
+        "medicare_floor": 195,
+        "cash_low": 400,
+        "cash_median": 775,
+        "cash_high": 2500
+      },
+      "73221": {
+        "label": "MRI upper extremity joint (shoulder) w/o contrast",
+        "medicare_floor": 225,
+        "cash_low": 385,
+        "cash_median": 625,
+        "cash_high": 1550
+      },
+      "73722": {
+        "label": "MRI lower extremity joint w/ contrast",
+        "medicare_floor": 275,
+        "cash_low": 500,
+        "cash_median": 800,
+        "cash_high": 1900
+      },
+      "74176": {
+        "label": "CT abdomen/pelvis w/o contrast",
+        "medicare_floor": 205,
+        "cash_low": 300,
+        "cash_median": 700,
+        "cash_high": 2200
+      },
+      "71046": {
+        "label": "X-ray chest, 2 views",
+        "medicare_floor": 33,
+        "cash_low": 40,
+        "cash_median": 110,
+        "cash_high": 350
+      },
+      "76700": {
+        "label": "Ultrasound abdomen, complete",
+        "medicare_floor": 115,
+        "cash_low": 100,
+        "cash_median": 250,
+        "cash_high": 900
+      },
+      "77067": {
+        "label": "Screening mammogram, bilateral",
+        "medicare_floor": 135,
+        "cash_low": 150,
+        "cash_median": 250,
+        "cash_high": 700
+      },
+      "77080": {
+        "label": "DEXA bone density, axial",
+        "medicare_floor": 100,
+        "cash_low": 80,
+        "cash_median": 180,
+        "cash_high": 500
       }
     }
   },
