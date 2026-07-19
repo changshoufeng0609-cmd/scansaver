@@ -107,6 +107,9 @@ def latest_spec():
 async def api_parse_document(file: UploadFile):
     config = load_config()
     spec = parse_document(await file.read(), file.filename, config)
+    if "irrelevant" in spec:
+        raise HTTPException(422, f"Not a usable document for "
+                                 f"{config['display_name']}: {spec['irrelevant']}")
     spec_id = db.create_spec(spec, config["vertical"], confirmed=False)
     return {"spec_id": spec_id, "spec": spec}
 

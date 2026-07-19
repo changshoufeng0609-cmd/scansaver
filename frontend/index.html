@@ -258,8 +258,9 @@ $("parse-btn").onclick = async () => {
   if (!f) return alert("Choose a file first");
   $("spec-status").textContent = "parsing…";
   const fd = new FormData(); fd.append("file", f);
-  const res = await (await fetch("/api/parse-document",
-    {method: "POST", body: fd})).json();
+  const r = await fetch("/api/parse-document", {method: "POST", body: fd});
+  const res = await r.json();
+  if (!r.ok) { $("spec-status").textContent = `✗ ${res.detail}`; return; }
   specId = res.spec_id;
   $("spec-json").value = JSON.stringify(res.spec, null, 2);
   $("spec-status").textContent = `spec ${specId} · draft (from document)`;
