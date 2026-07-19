@@ -11,9 +11,11 @@ rehearsal set AUTOPILOT_PHONE_OVERRIDE in .env to route every facility call
 to one phone. Facilities without a number are skipped — autopilot never
 invents a dial target.
 """
+import json
 import os
 import threading
 import time
+from pathlib import Path
 
 from . import calls, elevenlabs_client
 from .report import rank_quotes
@@ -28,7 +30,20 @@ def _log(msg: str):
 
 
 def _phone(cp: dict) -> str:
-    return os.environ.get("AUTOPILOT_PHONE_OVERRIDE") or cp.get("phone") or ""
+    """Dial-target resolution: env override > gitignored local map > config.
+    Personal numbers live in config/phones.local.json so they never reach git."""
+    override = os.environ.get("AUTOPILOT_PHONE_OVERRIDE")
+    if override:
+        return override
+    local = Path(__file__).resolve().parent.parent / "config" / "phones.local.json"
+    if local.exists():
+        try:
+            mapped = json.loads(local.read_text()).get(cp.get("agent_key", ""))
+            if mapped:
+                return mapped
+        except Exception:
+            pass
+    return cp.get("phone") or ""
 
 
 def _wait_done(conversation_id: str, timeout: int = 420) -> str:
