@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -49,6 +50,9 @@ def _resolve_spec_id(payload_spec_id: str | None) -> str:
 @app.get("/")
 def index():
     return FileResponse(ROOT / "frontend" / "index.html")
+
+
+app.mount("/static", StaticFiles(directory=ROOT / "frontend"), name="static")
 
 
 @app.get("/api/config")
