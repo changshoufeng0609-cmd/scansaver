@@ -43,17 +43,16 @@ the evidence chain stay under our control).
 
 ```mermaid
 flowchart TD
-    U([User]) -->|voice widget / phone call| EST["Estimator agent"]
-    U -->|doctor's order photo| DOC["parse_document<br/>(OpenAI vision)"]
-    EST -->|submit_spec tool| API["FastAPI backend<br/>+ SQLite"]
+    U([User]) -->|voice / phone| EST["Estimator agent"]
+    U -->|order photo| DOC["parse_document<br/>(OpenAI vision)"]
+    U -->|confirm spec| API
+    EST -->|submit_spec| API["FastAPI + SQLite"]
     DOC --> API
-    U -->|confirms spec on dashboard| API
-    API -->|"spec injected verbatim<br/>(dynamic variables)"| CALLER["Caller/Closer agent"]
-    CALLER <-->|"phone call (Twilio)"| CP["Receptionists:<br/>stonewaller · lowballer · upseller<br/>(teammates or counterparty agents)"]
-    CALLER -->|log_quote / log_outcome tools| API
-    API -->|red-flag engine + benchmarks| LEDGER["Dashboard ledger"]
-    EL["ElevenLabs post-call webhook"] -->|transcripts + audio| API
-    API -->|"best REAL quote as leverage<br/>(negotiate mode)"| CALLER
+    EL["ElevenLabs<br/>post-call webhook"] -->|transcripts, audio| API
+    API -->|"spec verbatim;<br/>round 2: real best<br/>quote as leverage"| CALLER["Caller/Closer agent"]
+    CALLER -->|log_quote,<br/>log_outcome| API
+    CALLER <-->|"Twilio call"| CP["Receptionists<br/>(teammates or<br/>counterparty agents)"]
+    API -->|red flags +<br/>benchmarks| LEDGER["Dashboard ledger"]
     API --> REPORT["Ranked report<br/>+ recordings"]
 ```
 
