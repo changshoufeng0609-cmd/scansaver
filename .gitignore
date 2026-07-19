@@ -5,5 +5,5 @@ __pycache__/
 data/
 agents/agent_ids.json
 .DS_Store
-
 .python-version
+config/phones.local.json

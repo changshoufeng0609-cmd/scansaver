@@ -25,6 +25,12 @@
   yours once, the calls are in English.
 - **Touching code?** Clone the repo, open a PR. Secrets (`.env`) are not in
   git — ask Shou-Feng.
+- **⚠️ NEVER run `python -m scripts.setup_agents` from your machine.** It
+  deletes and recreates every agent in the SHARED ElevenLabs workspace and
+  bakes YOUR ngrok URL into the tool callbacks — which silently breaks the
+  live system (this happened; it took a while to diagnose). Prompt/config
+  changes go through a PR; Shou-Feng applies them with
+  `python -m scripts.update_prompts` (updates in place, breaks nothing).
 
 ## How to drive it
 

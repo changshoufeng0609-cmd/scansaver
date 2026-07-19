@@ -14,6 +14,30 @@ from .spec_utils import (benchmark_line, load_config, payment_line,
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def prior_contact_line(spec_id: str, facility: str) -> str:
+    """Summarize what THIS facility already told us, so a repeat call continues
+    the relationship instead of starting the interview over."""
+    quotes = [q for q in db.list_quotes(spec_id) if q["facility_name"] == facility]
+    outcomes = [o for o in db.list_outcomes(spec_id) if o["facility_name"] == facility]
+    if not quotes and not outcomes:
+        return "You have not spoken with this facility before. This is a first call."
+    parts = ["You HAVE called this facility before. What they told you last time:"]
+    if quotes:
+        q = quotes[-1]
+        parts.append(
+            f"- Their quote: ${q['total']:.0f} "
+            f"({'itemized' if q['itemized'] else 'NOT itemized'}; radiologist read "
+            f"{'included' if q['read_included'] else 'NOT included / separate'})."
+        )
+        if q.get("notes"):
+            parts.append(f"- Notes from that call: {q['notes']}")
+    for o in outcomes[-1:]:
+        parts.append(f"- Call ended as {o['outcome_type']}: {o.get('details', '')}")
+    parts.append("Reference this earlier conversation naturally; do not re-ask "
+                 "for numbers they already gave you.")
+    return "\n".join(parts)
+
+
 def build_dynamic_variables(spec_id: str, facility: str, negotiate: bool) -> dict:
     config = load_config()
     spec_row = db.get_spec(spec_id)
@@ -43,6 +67,7 @@ def build_dynamic_variables(spec_id: str, facility: str, negotiate: bool) -> dic
         "negotiation_mode": "yes" if negotiate else "no",
         "best_quote_line": best_quote_line,
         "benchmark_line": benchmark_line(spec, config),
+        "prior_contact_line": prior_contact_line(spec_id, facility),
     }
 
 

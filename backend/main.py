@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 load_dotenv()
 
-from . import calls, db, elevenlabs_client, redflags, report  # noqa: E402
+from . import autopilot, calls, db, elevenlabs_client, redflags, report  # noqa: E402
 from .parse_document import parse_document  # noqa: E402
 from .spec_utils import get_benchmark, load_config  # noqa: E402
 
@@ -54,11 +54,15 @@ def index():
 @app.get("/api/config")
 def api_config():
     config = load_config()
+    market = [
+        {**cp, "phone": autopilot._phone(cp)}
+        for cp in config.get("counterparty_market", [])
+    ]
     return {
         "vertical": config["vertical"],
         "display_name": config["display_name"],
         "quote_line_items": config["quote_line_items"],
-        "counterparty_market": config.get("counterparty_market", []),
+        "counterparty_market": market,
         "agent_ids": _agent_ids(),
     }
 
@@ -103,6 +107,9 @@ def latest_spec():
 async def api_parse_document(file: UploadFile):
     config = load_config()
     spec = parse_document(await file.read(), file.filename, config)
+    if "irrelevant" in spec:
+        raise HTTPException(422, f"Not a usable document for "
+                                 f"{config['display_name']}: {spec['irrelevant']}")
     spec_id = db.create_spec(spec, config["vertical"], confirmed=False)
     return {"spec_id": spec_id, "spec": spec}
 
@@ -111,10 +118,19 @@ async def api_parse_document(file: UploadFile):
 
 @app.post("/tools/submit_spec")
 async def tool_submit_spec(request: Request):
-    """Estimator agent submits the verbally-confirmed spec at interview end."""
+    """Estimator agent submits the verbally-confirmed spec at interview end.
+    With autopilot on, the verbal confirmation counts as THE confirmation:
+    the spec is confirmed and the market round starts immediately."""
     body = await request.json()
     config = load_config()
     spec = body.get("spec") or body  # tolerate flat payloads from the LLM
+    if autopilot.STATE["enabled"]:
+        spec_id = db.create_spec(spec, config["vertical"], confirmed=True)
+        autopilot.kick_off(spec_id)
+        return {"spec_id": spec_id,
+                "message": ("Spec confirmed. Tell the user we're starting to "
+                            "call the imaging centers right now and they can "
+                            "hang up — results will be on the dashboard.")}
     spec_id = db.create_spec(spec, config["vertical"], confirmed=False)
     return {"spec_id": spec_id,
             "message": "Spec saved. Ask the user to confirm it on screen."}
@@ -186,6 +202,33 @@ async def api_start_call(request: Request):
     except ValueError as e:
         raise HTTPException(400, str(e))
     return {"conversation_id": out["conversation_id"], "spec_id": out["spec_id"]}
+
+
+# ---------- autopilot ----------
+
+@app.get("/api/autopilot")
+def get_autopilot():
+    return autopilot.STATE
+
+
+@app.post("/api/autopilot")
+async def set_autopilot(request: Request):
+    body = await request.json()
+    autopilot.STATE["enabled"] = bool(body.get("enabled"))
+    return {"enabled": autopilot.STATE["enabled"]}
+
+
+@app.post("/api/autopilot/run")
+def run_autopilot_now():
+    """One-button market round: call every configured facility with the latest
+    confirmed spec, then the negotiation round. Same engine the phone-intake
+    trigger uses."""
+    latest = db.latest_spec(confirmed_only=True)
+    if not latest:
+        raise HTTPException(400, "No confirmed spec — do intake (voice/document) first")
+    if not autopilot.kick_off(latest["id"]):
+        raise HTTPException(409, "Autopilot is already running")
+    return {"ok": True, "spec_id": latest["id"]}
 
 
 # ---------- inbound agent switch (who answers our number) ----------
