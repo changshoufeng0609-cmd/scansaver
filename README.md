@@ -43,38 +43,17 @@ the evidence chain stay under our control).
 
 ```mermaid
 flowchart TD
-    U([User])
-
-    subgraph S1["1 · Intake — tell it once"]
-        EST["Estimator agent<br/>voice widget or phone call"]
-        DOC["Document parser<br/>OpenAI vision, same spec schema"]
-    end
-
-    API["FastAPI + SQLite<br/>confirmed spec · quote ledger<br/>red-flag engine · market benchmarks"]
-
-    subgraph S2["2 · The calls"]
-        CALLER["Caller / Closer agent<br/>gets the spec verbatim;<br/>round 2 carries the real<br/>best quote as leverage"]
-        CP["Receptionists<br/>teammates role-playing, or<br/>counterparty agents"]
-    end
-
-    EL["ElevenLabs post-call webhook<br/>transcripts + recordings"]
-
-    subgraph S3["3 · The close"]
-        LEDGER["Live dashboard ledger"]
-        REPORT["Ranked report + audio evidence"]
-    end
-
-    U --> EST
-    U --> DOC
-    U -->|confirms| API
-    EST -->|submit_spec| API
+    U([User]) -->|voice widget / phone call| EST["Estimator agent"]
+    U -->|doctor's order photo| DOC["parse_document<br/>(OpenAI vision)"]
+    EST -->|submit_spec tool| API["FastAPI backend<br/>+ SQLite"]
     DOC --> API
-    API --> CALLER
-    CALLER -->|log_quote| API
-    CALLER <-->|Twilio| CP
-    EL --> API
-    API --> LEDGER
-    API --> REPORT
+    U -->|confirms spec on dashboard| API
+    API -->|"spec injected verbatim; round 2<br/>adds the real best quote as leverage"| CALLER["Caller/Closer agent"]
+    CALLER <-->|"phone call (Twilio)"| CP["Receptionists:<br/>stonewaller · lowballer · upseller<br/>(teammates or counterparty agents)"]
+    CALLER -->|log_quote / log_outcome tools| API
+    API -->|red-flag engine + benchmarks| LEDGER["Dashboard ledger"]
+    EL["ElevenLabs post-call webhook"] -->|transcripts + audio| API
+    API --> REPORT["Ranked report<br/>+ recordings"]
 ```
 
 ## Repo tour
