@@ -84,10 +84,15 @@ def checked_voice(voice_ids: set[str] | None, key: str) -> str | None:
 
 def main():
     config = load_config()
-    base_url = os.environ.get("PUBLIC_BASE_URL")
-    if not base_url:
-        raise SystemExit("Set PUBLIC_BASE_URL in .env (your ngrok https URL) first.")
+    base_url = os.environ.get("PUBLIC_BASE_URL", "http://localhost:8000")
     base_url = base_url.rstrip("/")
+    if base_url.startswith(("http://localhost", "http://127.0.0.1")):
+        print(
+            "WARNING: PUBLIC_BASE_URL points to localhost. Agent provisioning "
+            "can continue, but cloud-hosted ElevenLabs agents cannot reach the "
+            "local tool or post-call webhook endpoints. Set a public HTTPS URL "
+            "before testing live agent callbacks."
+        )
 
     try:
         voice_ids = list_voice_ids()
@@ -131,9 +136,10 @@ def main():
     ids["estimator"] = create_agent(
         name="ScanSaver — Estimator",
         system_prompt=render(AGENTS_DIR / "estimator.md", common),
-        first_message=("Hi! I'll help you shop this around so you never overpay. "
-                       "First, a couple of quick questions — what kind of scan do "
-                       "you need?"),
+        first_message=("Hi, you've reached ScanSaver. We're here to help you get "
+                       "the best value for your scan. Would you like a quick "
+                       "overview of how it works, or should we start finding an "
+                       "imaging center near you?"),
         tool_ids=[tool_ids["submit_spec"]],
         llm=DEFAULT_LLM,
         voice_id=checked_voice(voice_ids, "estimator"),
@@ -202,13 +208,17 @@ def main():
     ids_path.write_text(json.dumps(ids, indent=2))
     print(f"Wrote {ids_path}:\n{json.dumps(ids, indent=2)}")
     print("\nNext steps (dashboard, one-time):")
-    print("  1. Estimator agent → Advanced tab → disable authentication ('public"
+    print("  1. Estimator agent -> Advanced tab -> disable authentication ('public"
           " agent') so the web widget in frontend/index.html can load it. "
-          "Optionally add your domain in Security → Allowlist.")
-    print("  2. ElevenAgents settings → post-call webhooks → point at "
-          f"{base_url}/webhooks/post_call (enable 'transcription'; 'audio' too "
-          "if you want recordings pushed instead of pulled).")
-    print("  3. Phone Numbers tab → import your Twilio number, copy its id into "
+          "Optionally add your domain in Security -> Allowlist.")
+    if base_url.startswith(("http://localhost", "http://127.0.0.1")):
+        print("  2. Post-call webhooks are unavailable in localhost-only mode. "
+              "Use a public HTTPS URL when you need live callbacks.")
+    else:
+        print("  2. ElevenAgents settings -> post-call webhooks -> point at "
+              f"{base_url}/webhooks/post_call (enable 'transcription'; 'audio' too "
+              "if you want recordings pushed instead of pulled).")
+    print("  3. Phone Numbers tab -> import your Twilio number, copy its id into "
           ".env as ELEVENLABS_PHONE_NUMBER_ID.")
 
 

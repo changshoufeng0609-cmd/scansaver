@@ -59,7 +59,6 @@ pip install -r requirements.txt
 cp .env.example .env            # fill keys
 
 uvicorn backend.main:app --reload --port 8000
-ngrok http 8000                 # → PUBLIC_BASE_URL in .env, then restart shell/env
 
 python -m scripts.setup_agents  # (re)create all agents; rerun after prompt/config edits
 python -m scripts.start_call --to +1XXXXXXXXXX --facility "Summit Imaging Center"
@@ -77,7 +76,7 @@ open http://localhost:8000      # dashboard
 | `ELEVENLABS_LLM` | LLM id string for agents (default `claude-sonnet-4-5`; verified enum also has `claude-sonnet-4-6`, `claude-haiku-4-5`, `claude-opus-4-7`) |
 | `OPENAI_API_KEY` | for document parsing + report writing |
 | `OPENAI_MODEL` | optional; default `gpt-4o` (needs vision + PDF file input) |
-| `PUBLIC_BASE_URL` | ngrok https URL; baked into agent tool URLs at setup time |
+| `PUBLIC_BASE_URL` | defaults to `http://localhost:8000`; use a reachable HTTPS URL only for cloud-hosted agent tools/webhooks |
 | `VERTICAL_CONFIG` | default `config/medical_imaging.json` |
 
 ## Verify with live docs — DO THIS FIRST

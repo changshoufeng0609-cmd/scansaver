@@ -18,7 +18,7 @@
 ## Who does what
 
 - **Only ONE laptop runs the system** (Shou-Feng's — the backend, database,
-  ngrok tunnel, and ElevenLabs workspace all live there). Nobody else needs to
+  optional public tunnel, and ElevenLabs workspace all live there). Nobody else needs to
   set anything up.
 - **Playing a clinic receptionist?** You literally just need your phone and the
   cheat sheet below. Full scripts live in `agents/counterparties/*.md` — read
@@ -28,8 +28,8 @@
 
 ## How to drive it
 
-Dashboard: http://localhost:8000 (or from anywhere:
-https://enlisted-edition-graveness.ngrok-free.dev)
+Dashboard: http://localhost:8000. Remote access is available only when the host
+chooses to run a public tunnel or deployment.
 
 1. **01 · Intake** — talk to the Estimator widget (in English), or upload a
    doctor's order photo. You can also just call **+1 605 566 4795** — the

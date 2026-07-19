@@ -11,16 +11,19 @@ the Hack-Nation "The Negotiator" challenge.
 
 ## Quickstart
 
+On Windows, after creating `.venv`, start the local backend with:
+
+```powershell
+.\start.cmd
+```
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # fill in keys
 
-# terminal 1 — backend + dashboard
+# local backend + dashboard
 uvicorn backend.main:app --reload --port 8000
-
-# terminal 2 — public URL for agent tools & webhooks
-ngrok http 8000        # copy https URL into .env as PUBLIC_BASE_URL
 
 # provision all five agents (estimator, caller, 3 counterparties)
 python -m scripts.setup_agents
@@ -30,10 +33,15 @@ python -m scripts.start_call --to +1XXXXXXXXXX --facility "Summit Imaging Center
 python -m scripts.start_call --to +1XXXXXXXXXX --facility "Premier Diagnostic Imaging" --negotiate
 ```
 
+The backend and dashboard do not require a tunnel. Cloud-hosted ElevenLabs
+agents cannot reach `localhost`, so live server-tool and post-call webhook
+callbacks still require setting `PUBLIC_BASE_URL` to a reachable HTTPS URL.
+That URL can come from any tunneling or deployment provider; ngrok is optional.
+
 One-time dashboard steps on elevenlabs.io: import a Twilio number (→
-`ELEVENLABS_PHONE_NUMBER_ID`), point the workspace post-call webhook at
-`<PUBLIC_BASE_URL>/webhooks/post_call`, and allow the Estimator agent's public
-web widget.
+`ELEVENLABS_PHONE_NUMBER_ID`), configure the workspace post-call webhook at
+`<PUBLIC_BASE_URL>/webhooks/post_call` when using a public URL, and allow the
+Estimator agent's public web widget.
 
 ## How the agents wire together
 

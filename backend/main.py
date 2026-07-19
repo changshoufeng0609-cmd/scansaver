@@ -1,8 +1,10 @@
 """ScanSaver backend: the webhook target for ElevenLabs agent tools + post-call
 events, and the API behind the frontend dashboard.
 
-Run:    uvicorn backend.main:app --reload --port 8000
-Expose: ngrok http 8000   -> put the https URL in .env as PUBLIC_BASE_URL
+Run locally: uvicorn backend.main:app --reload --port 8000
+
+PUBLIC_BASE_URL is only needed by cloud-hosted ElevenLabs tools and webhooks;
+the dashboard and backend APIs run directly on localhost.
 """
 import base64
 import hashlib
@@ -226,7 +228,7 @@ def _verify_signature(raw: bytes, header: str | None) -> bool:
     official SDK (elevenlabs.webhooks.construct_event): header
     'elevenlabs-signature: t=<ts>,v0=<hex hmac_sha256(secret, f"{ts}.{body}")>',
     30-minute timestamp tolerance.
-    Skipped (returns True) when ELEVENLABS_WEBHOOK_SECRET is unset — fine for a hackathon over ngrok."""
+    Skipped (returns True) when ELEVENLABS_WEBHOOK_SECRET is unset."""
     secret = os.environ.get("ELEVENLABS_WEBHOOK_SECRET")
     if not secret:
         return True
