@@ -35,6 +35,28 @@ One-time dashboard steps on elevenlabs.io: import a Twilio number (→
 `<PUBLIC_BASE_URL>/webhooks/post_call`, and allow the Estimator agent's public
 web widget.
 
+## How the agents wire together
+
+The five ElevenLabs agents never talk to each other directly — all orchestration
+runs through our FastAPI backend (that's deliberate: the spec, the leverage, and
+the evidence chain stay under our control).
+
+```mermaid
+flowchart TD
+    U([User]) -->|voice widget / phone call| EST["🎙 Estimator agent"]
+    U -->|doctor's order photo| DOC["📄 parse_document<br/>(OpenAI vision)"]
+    EST -->|submit_spec tool| API["FastAPI backend<br/>+ SQLite"]
+    DOC --> API
+    U -->|confirms spec on dashboard| API
+    API -->|"spec injected verbatim<br/>(dynamic variables)"| CALLER["📞 Caller/Closer agent"]
+    CALLER <-->|"phone call (Twilio)"| CP["Receptionists:<br/>stonewaller · lowballer · upseller<br/>(teammates or counterparty agents)"]
+    CALLER -->|log_quote / log_outcome tools| API
+    API -->|red-flag engine + benchmarks| LEDGER["📊 Dashboard ledger"]
+    EL["ElevenLabs post-call webhook"] -->|transcripts + audio| API
+    API -->|"best REAL quote as leverage<br/>(negotiate mode)"| CALLER
+    API --> REPORT["🏆 Ranked report<br/>+ recordings"]
+```
+
 ## Repo tour
 
 ```
