@@ -188,6 +188,37 @@ async def api_start_call(request: Request):
     return {"conversation_id": out["conversation_id"], "spec_id": out["spec_id"]}
 
 
+# ---------- inbound agent switch (who answers our number) ----------
+
+@app.get("/api/inbound")
+def get_inbound():
+    pid = os.environ.get("ELEVENLABS_PHONE_NUMBER_ID")
+    if not pid:
+        return {"phone_number": None, "assigned": None, "agents": []}
+    info = elevenlabs_client.get_phone_number(pid)
+    assigned_id = (info.get("assigned_agent") or {}).get("agent_id")
+    ids = _agent_ids()
+    assigned_key = next((k for k, v in ids.items()
+                         if k != "_tools" and v == assigned_id), None)
+    return {"phone_number": info.get("phone_number"),
+            "assigned": assigned_key,
+            "agents": [k for k in ids if k != "_tools"]}
+
+
+@app.post("/api/inbound")
+async def set_inbound(request: Request):
+    body = await request.json()
+    key = body.get("agent_key")
+    ids = _agent_ids()
+    if key not in ids or key == "_tools":
+        raise HTTPException(400, f"agent_key must be one of {[k for k in ids if k != '_tools']}")
+    pid = os.environ.get("ELEVENLABS_PHONE_NUMBER_ID")
+    if not pid:
+        raise HTTPException(400, "ELEVENLABS_PHONE_NUMBER_ID not set")
+    elevenlabs_client.assign_agent_to_number(pid, ids[key])
+    return {"ok": True, "assigned": key}
+
+
 # ---------- ElevenLabs post-call webhook ----------
 
 def _verify_signature(raw: bytes, header: str | None) -> bool:

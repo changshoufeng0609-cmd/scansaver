@@ -133,6 +133,14 @@
         <button id="call-btn">Call</button>
         <span id="call-status" class="mono" style="font-size:13px"></span>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13.5px">
+        <span class="mono" id="inbound-number" style="color:var(--muted)">inbound —</span>
+        <span>answered by</span>
+        <select id="inbound-agent" style="font:inherit;padding:4px 8px;
+          border:1px solid var(--line);border-radius:6px"></select>
+        <button class="secondary" id="inbound-btn" style="padding:5px 12px;font-size:13px">Switch</button>
+        <span id="inbound-status" class="mono" style="font-size:12px;color:var(--accent)"></span>
+      </div>
       <div id="calls-list" class="mono" style="font-size:12.5px;margin-top:10px;color:var(--muted)"></div>
     </div>
     <div id="benchmark-band" class="mono" style="font-size:13px;color:var(--muted);margin:0 0 10px"></div>
@@ -225,6 +233,26 @@ $("confirm-btn").onclick = async () => {
   }
   await fetch(`/api/specs/${specId}/confirm`, {method: "POST"});
   $("spec-status").textContent = `spec ${specId} · confirmed ✓`;
+};
+
+async function loadInbound() {
+  try {
+    const d = await (await fetch("/api/inbound")).json();
+    if (!d.phone_number) return;
+    $("inbound-number").textContent = d.phone_number;
+    $("inbound-agent").innerHTML = d.agents.map(a =>
+      `<option value="${a}" ${a === d.assigned ? "selected" : ""}>${a}</option>`).join("");
+  } catch (e) { /* backend not ready */ }
+}
+
+$("inbound-btn").onclick = async () => {
+  $("inbound-status").textContent = "switching…";
+  const res = await fetch("/api/inbound", {method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({agent_key: $("inbound-agent").value})});
+  $("inbound-status").textContent = res.ok ? "switched ✓" :
+    "error: " + (await res.json()).detail;
+  setTimeout(() => $("inbound-status").textContent = "", 3000);
 };
 
 $("call-btn").onclick = async () => {
@@ -348,7 +376,7 @@ $("report-btn").onclick = async () => {
      <strong>Call recordings</strong>${audio || '<div class="empty">none stored yet</div>'}`;
 };
 
-loadConfig().then(loadLatest).then(poll);
+loadConfig().then(loadLatest).then(poll).then(loadInbound);
 </script>
 </body>
 </html>

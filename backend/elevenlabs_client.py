@@ -89,6 +89,20 @@ def delete_agent(agent_id: str) -> None:
                  timeout=30).raise_for_status()
 
 
+def get_phone_number(phone_number_id: str) -> dict:
+    r = httpx.get(f"{BASE}/v1/convai/phone-numbers/{phone_number_id}",
+                  headers=_headers(), timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def assign_agent_to_number(phone_number_id: str, agent_id: str) -> dict:
+    r = httpx.patch(f"{BASE}/v1/convai/phone-numbers/{phone_number_id}",
+                    headers=_headers(), json={"agent_id": agent_id}, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
 def list_voice_ids() -> set[str]:
     """Ids of voices visible to this workspace (premade + cloned)."""
     r = httpx.get(f"{BASE}/v1/voices", headers=_headers(), timeout=30)
