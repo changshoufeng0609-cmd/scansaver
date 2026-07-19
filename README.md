@@ -41,20 +41,7 @@ The five ElevenLabs agents never talk to each other directly — all orchestrati
 runs through our FastAPI backend (that's deliberate: the spec, the leverage, and
 the evidence chain stay under our control).
 
-```mermaid
-flowchart TD
-    U([User]) -->|voice widget / phone call| EST["Estimator agent"]
-    U -->|doctor's order photo| DOC["parse_document<br/>(OpenAI vision)"]
-    EST -->|submit_spec tool| API["FastAPI backend<br/>+ SQLite"]
-    DOC --> API
-    U -->|confirms spec on dashboard| API
-    API -->|"spec injected verbatim; round 2<br/>adds the real best quote as leverage"| CALLER["Caller/Closer agent"]
-    CALLER <-->|"phone call (Twilio)"| CP["Receptionists:<br/>stonewaller · lowballer · upseller<br/>(teammates or counterparty agents)"]
-    CALLER -->|log_quote / log_outcome tools| API
-    API -->|red-flag engine + benchmarks| LEDGER["Dashboard ledger"]
-    EL["ElevenLabs post-call webhook"] -->|transcripts + audio| API
-    API --> REPORT["Ranked report<br/>+ recordings"]
-```
+![Architecture — how the agents wire together](docs/architecture.svg)
 
 ## Repo tour
 

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 820" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#16262B"/>
+    </marker>
+  </defs>
+  <style>
+    .box  { fill:#F7FAF9; stroke:#0E6E62; stroke-width:1.6; rx:10; }
+    .hub  { fill:#0E6E62; stroke:none; }
+    .t    { fill:#16262B; font-size:15px; text-anchor:middle; }
+    .tb   { fill:#16262B; font-size:16px; font-weight:700; text-anchor:middle; }
+    .tw   { fill:#FFFFFF; font-size:16px; font-weight:700; text-anchor:middle; }
+    .tw2  { fill:#D8E8E5; font-size:13px; text-anchor:middle; }
+    .sub  { fill:#5C6E6B; font-size:13px; text-anchor:middle; }
+    .lab  { fill:#41544F; font-size:13px; font-weight:600; text-anchor:middle;
+            paint-order:stroke; stroke:#FFFFFF; stroke-width:5px; }
+    .edge { fill:none; stroke:#16262B; stroke-width:1.5; }
+  </style>
+
+  <!-- User -->
+  <ellipse cx="620" cy="42" rx="52" ry="26" fill="#FFFFFF" stroke="#16262B" stroke-width="1.6"/>
+  <text class="tb" x="620" y="48">User</text>
+
+  <!-- Intake row -->
+  <rect class="box" x="115" y="122" width="240" height="66" rx="10"/>
+  <text class="tb" x="235" y="150">Estimator agent</text>
+  <text class="sub" x="235" y="172">voice widget or phone call</text>
+
+  <rect class="box" x="480" y="122" width="260" height="66" rx="10"/>
+  <text class="tb" x="610" y="150">parse_document</text>
+  <text class="sub" x="610" y="172">OpenAI vision</text>
+
+  <rect class="box" x="910" y="122" width="300" height="66" rx="10"/>
+  <text class="tb" x="1060" y="150">Post-call webhook</text>
+  <text class="sub" x="1060" y="172">transcripts + recordings</text>
+
+  <!-- API hub -->
+  <rect class="hub" x="460" y="330" width="320" height="92" rx="12"/>
+  <text class="tw" x="620" y="360">FastAPI backend + SQLite</text>
+  <text class="tw2" x="620" y="382">confirmed spec · quote ledger</text>
+  <text class="tw2" x="620" y="402">red-flag engine · market benchmarks</text>
+
+  <!-- Bottom row -->
+  <rect class="box" x="120" y="560" width="250" height="62" rx="10"/>
+  <text class="tb" x="245" y="596">Caller / Closer agent</text>
+
+  <rect class="box" x="650" y="560" width="230" height="62" rx="10"/>
+  <text class="tb" x="765" y="596">Dashboard ledger</text>
+
+  <rect class="box" x="950" y="560" width="260" height="62" rx="10"/>
+  <text class="tb" x="1080" y="588">Ranked report</text>
+  <text class="sub" x="1080" y="608">+ recordings</text>
+
+  <rect class="box" x="90" y="712" width="310" height="72" rx="10"/>
+  <text class="tb" x="245" y="742">Receptionists</text>
+  <text class="sub" x="245" y="764">teammates or counterparty agents</text>
+
+  <!-- Edges -->
+  <path class="edge" marker-end="url(#arr)" d="M 578 60 C 430 80 305 95 248 119"/>
+  <text class="lab" x="352" y="84">voice / phone</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 618 68 L 612 119"/>
+  <text class="lab" x="688" y="100">order photo</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 664 58 C 850 100 790 260 706 327"/>
+  <text class="lab" x="836" y="196">confirms spec</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 242 188 C 262 268 380 330 457 352"/>
+  <text class="lab" x="298" y="262">submit_spec</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 611 188 L 618 327"/>
+
+  <path class="edge" marker-end="url(#arr)" d="M 1055 188 C 960 260 860 320 783 352"/>
+
+  <path class="edge" marker-end="url(#arr)" d="M 502 422 C 400 465 315 505 260 557"/>
+  <text class="lab" x="298" y="470">spec, verbatim</text>
+  <text class="lab" x="298" y="489">round 2: real best quote</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 348 557 C 455 500 520 468 566 424"/>
+  <text class="lab" x="500" y="516">log_quote / log_outcome</text>
+
+  <path class="edge" marker-end="url(#arr)" marker-start="url(#arr)" d="M 245 624 L 245 710"/>
+  <text class="lab" x="332" y="672">phone call (Twilio)</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 655 424 C 700 475 740 515 760 557"/>
+  <text class="lab" x="768" y="486">red flags + benchmarks</text>
+
+  <path class="edge" marker-end="url(#arr)" d="M 752 418 C 930 465 1020 505 1072 557"/>
+</svg>
